@@ -47,9 +47,50 @@ jobs:
             ./travis-run-tests.sh python2
 
 
+  build_push_website:
+    docker:
+      - image: pyne/pyne_ubuntu_16.04
+    
+    working_directory: ~/repo
+      
+    steps:
+      - checkout
+
+    # Build PyNE!
+      - run:
+          name: Building PyNE
+          command: |
+            python setup.py install --user \
+                --moab $HOME/opt/moab --clean
+      
+      - run: 
+        command: ~/repo/pyne/docs
+  
+    # Build website locally!
+      - run:
+          name: Build PyNE website
+          command: make html
+      
+    # Push website!
+      - run:
+          name: Deploy PyNE website
+          command: make push
+
 workflows:
   version: 2
   build_and_test:
     jobs:
       - build_py2
       - build_py3
+
+  build_and_deploy_website:
+    jobs:
+      - build_push_website:
+          requires:
+              - build_py2
+              - build_py3
+          filters:
+              branches:
+                  ignore: /.*/
+              tags:
+                  only: /.*/
