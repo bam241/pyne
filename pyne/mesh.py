@@ -17,7 +17,8 @@ except ImportError:
     warn("the PyTAPS optional dependency could not be imported. "
          "Some aspects of the mesh module may be incomplete.", QAWarning)
 
-from pyne.material import Material, MaterialLibrary, MultiMaterial
+from pyne.material import Material, MultiMaterial
+from pyne.material_library import MaterialLibrary
 
 if sys.version_info[0] > 2:
     basestring = str
