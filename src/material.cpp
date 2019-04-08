@@ -628,7 +628,7 @@ std::string pyne::Material::mcnp(std::string frac_type) {
 
   // Set up atom or mass frac map
   std::map<int, double> fracs = get_density_frac(frac_type);
-  std::string frac_signi = "";
+  std::string frac_sign = "";
 
   if ("atom" != frac_type) {
     frac_sign = "-";
@@ -708,7 +708,7 @@ std::string pyne::Material::phits(std::string frac_type) {
 
   // Set up atom or mass frac map
   std::map<int, double> fracs = get_density_frac(frac_type);
-  std::string frac_signi = "";
+  std::string frac_sign = "";
 
   if ("atom" != frac_type) {
     frac_sign = "-";
@@ -1480,7 +1480,6 @@ std::map<int, double> pyne::Material::get_density_frac(std::string frac_type){
     } else {
       fracs = to_atom_frac();
     }
-    frac_sign = "";
   } else {
     fracs = comp;
     if (density != -1.0) {
