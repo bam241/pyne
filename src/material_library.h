@@ -180,6 +180,11 @@ class MaterialLibrary {
    * \return std::set<int>
   */
   pyne::nuc_set get_nuclist() { return nuclist; }
+  /**
+   * \brief write gdml isotopes input deck 
+   * \return std::string
+  */
+  std::string gdml_isotope();
 
 };  // end MaterialLibrary class header
 }  // end of pyne namespace

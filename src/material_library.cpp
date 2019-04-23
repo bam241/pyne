@@ -317,3 +317,21 @@ int pyne::MaterialLibrary::get_length_of_table(const std::string& filename,
 
   return arr_dims[0];
 }
+
+std::string pyne::MaterialLibrary::gdml_isotope() {
+  std::stringstream oss;
+
+  for (auto nuc : nuclist) {
+    oss << "<isotope ";
+    oss << "name=\"" << nucname::name(nuc) << "\" ";
+    oss << "Z=\"" << to_str(nucname::znum(nuc)) << "\" ";
+    oss << "N=\"" << to_str(nucname::anum(nuc)) << "\""; 
+    oss << ">" << std::endl;
+
+    oss << "  <atom type=\"A\" ";
+    oss << "value=\"" << atomic_mass_map[nuc] << "\">" << std::endl;
+    oss << "</isotope>" <<std::endl;
+  }
+  return oss.str();
+}
+
