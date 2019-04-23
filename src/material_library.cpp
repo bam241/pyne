@@ -318,7 +318,7 @@ int pyne::MaterialLibrary::get_length_of_table(const std::string& filename,
   return arr_dims[0];
 }
 
-std::string pyne::MaterialLibrary::gdml_isotope() {
+std::string pyne::MaterialLibrary::gdml_isotopes() {
   std::stringstream oss;
 
   for (auto nuc : nuclist) {

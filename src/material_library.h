@@ -184,7 +184,7 @@ class MaterialLibrary {
    * \brief write gdml isotopes input deck 
    * \return std::string
   */
-  std::string gdml_isotope();
+  std::string gdml_isotopes();
 
 };  // end MaterialLibrary class header
 }  // end of pyne namespace
