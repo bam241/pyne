@@ -1232,8 +1232,7 @@ def test_phits():
                           'name':'leu'})
 
     mass = leu.phits()
-    mass_exp = ('[ M a t e r i a l ]\n'
-                'C name: leu\n'
+    mass_exp = ('C name: leu\n'
                 'C comments: this is a long comment that will definitly go over the 80 character\n'
                 'C  limit, for science\n'
                 'M[ 2 ]\n'
@@ -1242,8 +1241,7 @@ def test_phits():
     assert_equal(mass, mass_exp)
     
     atom = leu.phits(frac_type='atom')
-    atom_exp = ('[ M a t e r i a l ]\n'
-                'C name: leu\n'
+    atom_exp = ('C name: leu\n'
                 'C comments: this is a long comment that will definitly go over the 80 character\n'
                 'C  limit, for science\n'
                 'M[ 2 ]\n'
@@ -1262,8 +1260,7 @@ def test_phits():
                    density=19.1)
 
     mass = leu.phits()
-    mass_exp = ('[ M a t e r i a l ]\n'
-                'C name: leu\n'
+    mass_exp = ('C name: leu\n'
                 'C comments: this is a long comment that will definitly go over the 80 character\n'
                 'C  limit, for science\n'
                 'M[ 2 ]\n'
@@ -1272,8 +1269,7 @@ def test_phits():
     assert_equal(mass, mass_exp)
     
     atom = leu.phits(frac_type='atom')
-    atom_exp = ('[ M a t e r i a l ]\n'
-                'C name: leu\n'
+    atom_exp = ('C name: leu\n'
                 'C comments: this is a long comment that will definitly go over the 80 character\n'
                 'C  limit, for science\n'
                 'M[ 2 ]\n'
