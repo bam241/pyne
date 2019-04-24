@@ -196,6 +196,8 @@ namespace pyne
     std::string mcnp(std::string frac_type = "mass");
     /// Return an phits input deck record as a string
     std::string phits(std::string frac_type = "mass");
+    /// return the compo fraction writen ala "mcnp"
+    std::string mcnp_frac(std::map<int, double> fracs, std::string frac_sign = "");
     ///
     /// Return an GDML input deck record as a string
     std::string gdml();
