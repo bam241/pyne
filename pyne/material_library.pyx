@@ -106,7 +106,7 @@ cdef class _MaterialLibrary:
         """MaterialLibrary C++ destructor."""
         del self._inst
 
-    def from_hdf5(self, filename, datapath="/materials", nucpath="/nucid", protocol=1):
+    def from_hdf5(self, filename, datapath="/materials", nucpath="", protocol=1):
         cdef char * c_filename
         filename_bytes = filename.encode('UTF-8')
         c_filename = filename_bytes
@@ -116,8 +116,8 @@ cdef class _MaterialLibrary:
         cdef char * c_nucpath
         nucpath_bytes = nucpath.encode('UTF-8')
         c_nucpath = nucpath_bytes
-
         self._inst.from_hdf5(c_filename, c_datapath, c_nucpath, protocol)
+
 
     def write_hdf5(self, filename, datapath="/materials", nucpath="/nucid"):
         cdef char * c_filename
@@ -156,20 +156,11 @@ cdef class _MaterialLibrary:
         # Get the correct cpp_material
         cdef cpp_material.Material c_mat
         cdef std_string c_matname
-
-
         c_matname = matname
-        c_mat = self._inst.get_material(c_matname)
-
+        c_mat = self._inst.get_material(c_matname);
         # build a PyNE Material object form the cpp_material
-        cdef jsoncpp.Value metadata = jsoncpp.Value()
-        metadata.__set_instance__(c_mat.metadata)
-        py_mat = material.Material(
-            c_mat.comp,
-            c_mat.mass,
-            c_mat.density,
-            c_mat.atoms_per_molecule,
-            metadata)
+        py_mat = material.Material(free_mat = False)
+        (< material._Material > py_mat).mat_pointer = new cpp_material.Material(c_mat.comp, c_mat.mass, c_mat.density, c_mat.atoms_per_molecule, c_mat.metadata)        
         return py_mat
 
     def merge(self, mat_library):
@@ -254,8 +245,8 @@ cdef class _MaterialLibrary:
             key = key.encode('UTF-8')
         elif isinstance(key, int):
             key = str(key).encode('UTF-8')
-
-        return self.get_material(key)
+        py_mat = self.get_material(key)
+        return py_mat
     
     def __len__(self):
         return self.mat_library.size()
@@ -268,7 +259,7 @@ cdef class _MaterialLibrary:
         self.del_material(key)
 
     def __iter__(self):
-        mat_lib_dict = map_to_dict_str_mat(self._inst.get_mat_library())
+        mat_lib_dict = map_to_dict_str_matp(self._inst.get_mat_library())
         self._iter_mat_lib = mat_lib_dict
         mat_lib_iter = iter(mat_lib_dict)
         return mat_lib_iter
@@ -321,16 +312,3 @@ cdef dict map_to_dict_str_matp(cpp_map[std_string, matp] cppmap):
 
     return pydict
 
-
-cdef dict map_to_dict_str_mat(cpp_map[std_string, cpp_material.Material] cppmap):
-    pydict = {}
-    cdef material._Material pymat
-    cdef cpp_map[std_string, cpp_material.Material].iterator mapiter = cppmap.begin()
-
-    while mapiter != cppmap.end():
-        pymat = material.Material()
-        pymat.mat_pointer[0] = deref(mapiter).second
-        pydict[< char * > deref(mapiter).first.c_str()] = pymat
-        inc(mapiter)
-
-    return pydict

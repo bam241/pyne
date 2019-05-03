@@ -18,7 +18,7 @@
 
 namespace pyne {
 
-typedef std::map<std::string, pyne::Material> mat_map;
+typedef std::map<std::string, pyne::Material*> mat_map;
 typedef std::set<std::string> matname_set;
 typedef std::set<int> nuc_set;
 

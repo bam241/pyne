@@ -94,10 +94,10 @@ cdef class Value(object):
     _value_type_names = ['null', 'int', 'uint', 'real', 'string', 'boolean',
                          'array', 'object']
 
-    cdef __set_instance__(self, cpp_jsoncpp.Value new_inst):
-        if self._inst:
-            del self._inst
-        self._inst = new cpp_jsoncpp.Value(new_inst)
+    #cdef __set_instance__(self, cpp_jsoncpp.Value new_inst):
+    #    if self._inst:
+    #        del self._inst
+    #    self._inst = new cpp_jsoncpp.Value(new_inst)
     
     def __cinit__(self, document=None, bint view=False):
         """Value C++ constuctor."""
@@ -117,7 +117,6 @@ cdef class Value(object):
     def __getitem__(self, pykey):
         cdef cpp_jsoncpp.Value * cvalue
         cdef Value pyvalue = Value(view=True)
-
         # convert key and get value
         if isinstance(pykey, basestring):
             pykey_bytes = pykey.encode()

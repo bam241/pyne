@@ -154,8 +154,9 @@ void pyne::Material::_load_comp_protocol1(hid_t db, std::string datapath, std::s
   density = (*mat_data).density;
   atoms_per_molecule = (*mat_data).atoms_per_mol;
   for (int i = 0; i < nuc_size; i++)
-    comp[nuclides[i]] = (double) (*mat_data).comp[i];
-
+    if((double) (*mat_data).comp[i] != 0) {
+      comp[nuclides[i]] = (double) (*mat_data).comp[i];
+    }
   delete[] mat_data;
   //
   // Get metadata from associated dataset, if available
@@ -281,18 +282,21 @@ void pyne::Material::from_hdf5(std::string filename, std::string datapath, std::
   bool datapath_exists = h5wrap::path_exists(db, datapath);
   if (!datapath_exists)
     throw h5wrap::PathNotFound(filename, datapath);
+  bool nucpath_exists = h5wrap::path_exists(db, nucpath);
+  if (!nucpath_exists)
+    throw h5wrap::PathNotFound(filename, nucpath);
 
   // Clear current content
   comp.clear();
 
   // Load via various protocols
-  if (protocol == 0)
+  if (protocol == 0) {
     _load_comp_protocol0(db, datapath, row);
-  else if (protocol == 1)
+  } else if (protocol == 1) {
     _load_comp_protocol1(db, datapath, nucpath, row);
-  else
+  } else {
     throw pyne::MaterialProtocolError();
-
+  }
   // Close the database
   status = H5Fclose(db);
 
