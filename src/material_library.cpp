@@ -3,6 +3,7 @@
 
 #ifndef PYNE_IS_AMALGAMATED
 #include "material_library.h"
+#include "data.h"
 #endif
 
 // Empty Constructor
@@ -320,7 +321,7 @@ int pyne::MaterialLibrary::get_length_of_table(const std::string& filename,
 
 std::string pyne::MaterialLibrary::gdml_isotopes() {
   std::stringstream oss;
-
+  pyne::_load_atomic_mass_map();
   for (auto nuc : nuclist) {
     oss << "<isotope ";
     oss << "name=\"" << nucname::name(nuc) << "\" ";
@@ -329,7 +330,7 @@ std::string pyne::MaterialLibrary::gdml_isotopes() {
     oss << ">" << std::endl;
 
     oss << "  <atom type=\"A\" ";
-    oss << "value=\"" << atomic_mass_map[nuc] << "\">" << std::endl;
+    oss << "value=\"" << atomic_mass_map[nuc] << "\"/>" << std::endl;
     oss << "</isotope>" <<std::endl;
   }
   return oss.str();
