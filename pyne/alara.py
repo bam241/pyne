@@ -440,6 +440,8 @@ def mesh_to_geom(mesh, geom_file, matlib_file):
     matlib = ""  # ALARA material library string
 
     for i, mat, ve in mesh:
+        print(mat)
+        
         volume += "    {0: 1.6E}    zone_{1}\n".format(mesh.elem_volume(ve), i)
         mat_loading += "    zone_{0}    mix_{0}\n".format(i)
         matlib += "mat_{0}    {1: 1.6E}    {2}\n".format(i, mesh.density[i],
