@@ -249,8 +249,8 @@ workflows:
             - py2_build
 
       - py2_pymoab_build:
-          requires:
-            - py2_build
+          #          requires:
+          #  - py2_build
       - py2_pymoab_test:
           requires:
             - py2_pymoab_build
