@@ -9,6 +9,7 @@
 #ifndef PYNE_IS_AMALGAMATED
   #include "particle.h"
   #include "tally.h"
+  #include "utils.h"
 #endif
 
 enum entity_type_enum { VOLUME, SURFACE, MESH }; // Enumeration for entity types
@@ -482,24 +483,24 @@ std::string pyne::Tally::mcnp(int tally_index, std::string mcnp_version,
     } else if (entity_geometry.find("Cylinder") != std::string::npos) {
       output << "CYL ";
       if (!is_zero(axl)) {
-        sup_var << indent_block << "AXL=" << join_to_string(axl);
+        sup_var << indent_block << "AXL=" << pyne::join_to_string<double>(axl);
       }
       if (!is_zero(vec)) {
         sup_var << "\n" << indent_block;
-        sup_var << "VEC=" << join_to_string(vec);
+        sup_var << "VEC=" << pyne::join_to_string<double>(vec);
       }
     }
 
-    output << " ORIGIN=" << join_to_string(origin) << "\n";
+    output << " ORIGIN=" << pyne::join_to_string<double>(origin) << "\n";
     std::string dir_name[3] = {"I", "J", "K"};
     std::vector<double> meshes[3] = {i_meshs, j_meshs, k_meshs};
     std::vector<int> bins[3] = {i_bins, j_bins, k_bins};
 
     for (int j = 0; j < 3; j++) {
       output << indent_block;
-      output << dir_name[j] << "MESH=" << join_to_string(meshes[j]);
+      output << dir_name[j] << "MESH=" << pyne::join_to_string<double>(meshes[j]);
       if (bins[j].size() > 0) {
-        output << " " << dir_name[j] << "INTS=" << join_to_string(bins[j]);
+        output << " " << dir_name[j] << "INTS=" << pyne::join_to_string<int>(bins[j]);
       }
       output << "\n";
     }
@@ -508,12 +509,12 @@ std::string pyne::Tally::mcnp(int tally_index, std::string mcnp_version,
     }
     if (e_bounds.size() > 0) {
       output << indent_block << "EMESH=";
-      output << join_to_string(e_bounds);
+      output << pyne::join_to_string<double>(e_bounds);
     }
     output << "\n";
     if (e_bins.size() > 0) {
       output << indent_block << "EINTS=";
-      output << join_to_string(e_bins);
+      output << pyne::join_to_string<int>(e_bins);
     }
     if (out.size() > 0) {
       output << "\n" << indent_block << "OUT=" << out;
@@ -525,6 +526,7 @@ std::string pyne::Tally::mcnp(int tally_index, std::string mcnp_version,
   // print sd card if area/volume specified
   return output.str();
 }
+
 template <typename T>
 bool pyne::Tally::is_zero(T vect) {
   int size = sizeof(vect) / sizeof(vect[0]);
@@ -532,19 +534,6 @@ bool pyne::Tally::is_zero(T vect) {
   for (int i = 0; i < size; i++) result &= (vect[i] == 0);
   return result;
 }
-
-template<typename T>
-std::string pyne::Tally::join_to_string(std::vector<T> vect, std::string delimiter){
-  std::stringstream out;
-  out << std::setiosflags(std::ios::fixed) << std::setprecision(6);
-  if (normalization > 1.0) 
-    out << std::scientific;
-  
-  for( int i= 0; i < vect.size(); i++) 
-    out << delimiter << vect[i];
-  return out.str();
-}
-
 
 // Form the tally line as function of its properties
 std::string pyne::Tally::form_mcnp_tally(int tally_index, 

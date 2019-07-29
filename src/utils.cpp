@@ -177,6 +177,17 @@ std::string pyne::capitalize(std::string s) {
 }
 
 
+template<class T>
+std::string pyne::join_to_string(std::vector<T> vect, std::string delimiter){
+  std::stringstream out;
+  out << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+  
+  for( int i= 0; i < vect.size(); i++) 
+    out << delimiter << vect[i];
+  return out.str();
+}
+
+
 std::string pyne::get_flag(char line[], int max_l) {
   char tempflag [10];
   for (int i = 0; i < max_l; i++)

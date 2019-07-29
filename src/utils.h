@@ -11,6 +11,7 @@
 
 //standard libraries
 #include <string>
+#include <iomanip>
 #include <string.h>
 #include <sstream>
 #include <cctype>
@@ -87,6 +88,10 @@ namespace pyne {
 
   /// Returns a capitalized copy of the string.
   std::string capitalize(std::string s);
+    
+  /// Forms a string from a vector, each element being separated by the delimiter
+  template<class T> 
+  std::string join_to_string(std::vector<T> vect, std::string delimiter = " ");
 
   /// Finds and returns the first white-space delimited token of a line.
   /// \param line a character array to take the first token from.
