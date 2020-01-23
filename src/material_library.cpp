@@ -21,7 +21,9 @@ pyne::MaterialLibrary::MaterialLibrary(const std::string& file,
                              " is empty.");
   }
   // load materials
+  std::cout << __FILE__ <<__LINE__ <<std::endl;
   from_hdf5(file, datapath, nucpath);
+  std::cout << __FILE__ <<__LINE__ <<std::endl;
 };
 
 void pyne::MaterialLibrary::from_hdf5(char* fname, char* dpath, char* npath,
@@ -37,13 +39,16 @@ void pyne::MaterialLibrary::from_hdf5(const std::string& filename,
                                       const std::string& datapath,
                                       const std::string& nucpath,
                                       int protocol) {
+  std::cout << __FILE__ <<__LINE__ <<std::endl;
   if (!hdf5_path_exists(filename, datapath)){
     throw std::runtime_error("The datapath, " + datapath + ", in " + filename +
                              " is empty.");
   }
 
+  std::cout << __FILE__ <<__LINE__ <<std::endl;
   int file_num_materials = get_length_of_table(filename, datapath);
   int library_length = material_library.size();
+  std::cout << __FILE__ <<__LINE__ <<std::endl;
   for (int i = 0; i < file_num_materials; i++) {
     pyne::Material mat = pyne::Material();  
     // Get material from the hdf5 file
@@ -52,8 +57,11 @@ void pyne::MaterialLibrary::from_hdf5(const std::string& filename,
     } else {
       mat.from_hdf5(filename, datapath, nucpath, i, protocol);
     }
+  std::cout << __FILE__ <<__LINE__ <<std::endl;
     (*this).add_material(mat);
+  std::cout << __FILE__ <<__LINE__ <<std::endl;
   }
+  std::cout << __FILE__ <<__LINE__ <<std::endl;
 }
 
 void pyne::MaterialLibrary::merge(pyne::MaterialLibrary mat_lib) {
