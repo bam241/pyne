@@ -295,6 +295,37 @@ void pyne::MaterialLibrary::write_hdf5(const std::string& filename,
   H5Fflush(db, H5F_SCOPE_GLOBAL);
   // Close out the Dataset
   H5Fclose(db);
+    
+  // Get full space
+  int chunksize=100;
+  hid_t data_set, data_space, data_hyperslab;
+  int data_rank = 1;
+  hsize_t data_dims[1] = {1};
+  hsize_t data_max_dims[1] = {H5S_UNLIMITED};
+  hsize_t data_offset[1] = {0};
+  data_space = H5Screate_simple(1, data_dims, data_max_dims);
+  size_t material_data_size = sizeof(pyne::material_data) + sizeof(double)*(nuclide_size-1);
+  hid_t desc = H5Tcreate(H5T_COMPOUND, material_data_size);
+
+  // Make data set properties to enable chunking
+  hid_t data_set_params = H5Pcreate(H5P_DATASET_CREATE);
+  hsize_t chunk_dims[1] = {static_cast<hsize_t>(chunksize)};
+  H5Pset_chunk(data_set_params, 1, chunk_dims);
+  H5Pset_deflate(data_set_params, 1);
+
+  // Create the data set
+  data_set = H5Dcreate2(db, datapath.c_str(), desc, data_space, H5P_DEFAULT,
+                          data_set_params, H5P_DEFAULT);
+  H5Dset_extent(data_set, data_dims);
+
+  // Add attribute pointing to nuc path
+  hid_t nuc_attr_type = H5Tcopy(H5T_C_S1);
+  H5Tset_size(nuc_attr_type, nucpath.length());
+  hid_t nuc_attr_space = H5Screate(H5S_SCALAR);
+  hid_t nuc_attr = H5Acreate2(data_set, "nucpath", nuc_attr_type, nuc_attr_space,
+                              H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(nuc_attr, nuc_attr_type, nucpath.c_str());
+  H5Fflush(db, H5F_SCOPE_GLOBAL);
 
   // Write the Materials in the file
   for (auto name : name_order) {
