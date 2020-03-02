@@ -50,7 +50,7 @@ import pyne.material as material
 warn(__name__ + " is not yet QA compliant.", QAWarning)
 
 _INTEGRAL_TYPES = (int, np.integer, np.bool_)
- 
+
 
 #
 #  Material Library
@@ -61,17 +61,16 @@ cdef class _MaterialLibrary:
     """
 
 
-    def __cinit__(self, lib=None, datapath="/materials", nucpath="/nucid"):
+    def __cinit__(self, lib=None, datapath="/materials"):
         """
         Parameters
         ----------
         lib : dict-like, str, or None, optional
-            The data to intialize the material library with.  If this is a
+            The data to initialize the material library with.  If this is a
             string, it is interpreted as a path to a file.
         datapath : str, optional
-            The path in the heirarchy to the data table in an HDF5 file.
-        nucpath : str, optional
-            The path in the heirarchy to the nuclide array in an HDF5 file.
+            The path in the hierarchy to the data table in an HDF5 file.
+            The path in the hierarchy to the nuclide array in an HDF5 file.
         """
         if lib != None:
             if sys.version_info[0] >= 3 and isinstance(lib, bytes):
@@ -82,12 +81,11 @@ cdef class _MaterialLibrary:
                 for key in sorted(lib.keys()):
                     mat = lib[key]
                     self.__setitem__(key, material.ensure_material(mat))
-            elif isinstance(lib, basestring) or isinstance(lib, unicode): 
+            elif isinstance(lib, basestring) or isinstance(lib, unicode):
                 # Python2: basestring = (std + unicode)
                 c_filename = lib.encode('UTF-8')
                 c_datapath = datapath.encode('UTF-8')
-                c_nucpath = nucpath.encode('UTF-8')
-                self._inst = new cpp_material_library.MaterialLibrary(c_filename, c_datapath, c_nucpath)
+                self._inst = new cpp_material_library.MaterialLibrary(c_filename, c_datapath)
             elif isinstance(lib, collections.Sequence):
                 self._inst = new cpp_material_library.MaterialLibrary()
                 for key in sorted(lib.keys()):
@@ -103,68 +101,59 @@ cdef class _MaterialLibrary:
         """MaterialLibrary C++ destructor."""
         del self._inst
 
-    def from_hdf5(self, filename, datapath="/materials", nucpath="", protocol=1):
+    def from_hdf5(self, filename, datapath):
         """Loads data from an HDF5 file into this material library.
         Parameters
         ----------
         file : str
             A path to an HDF5 file.
         datapath : str, optional
-            The path in the heirarchy to the data table in an HDF5 file.
-        nucpath : str, optional
-            The path in the heirarchy to the nuclide array in an HDF5 file.
+            The path in the hierarchy to the data table in an HDF5 file.
+            The path in the hierarchy to the nuclide array in an HDF5 file.
         protocol : int, optional
             Specifies the protocol to use to read in the data.  Different
             protocols are used to represent different internal structures in
             the HDF5 file.
 
-        """ 
+        """
         cdef char * c_filename
         filename_bytes = filename.encode('UTF-8')
         c_filename = filename_bytes
         cdef char * c_datapath
         datapath_bytes = datapath.encode('UTF-8')
         c_datapath = datapath_bytes
-        cdef char * c_nucpath
-        nucpath_bytes = nucpath.encode('UTF-8')
-        c_nucpath = nucpath_bytes
-        self._inst.from_hdf5(c_filename, c_datapath, c_nucpath, protocol)
+        self._inst.from_hdf5(c_filename, c_datapath)
 
 
-    def write_hdf5(self, filename, datapath="/materials", nucpath="/nucid"):
+    def write_hdf5(self, filename, datapath):
         """Writes this material library to an HDF5 file.
         Parameters
         ----------
         filename : str
             A path to an HDF5 file.
         datapath : str, optional
-            The path in the heirarchy to the data table in an HDF5 file.
-        nucpath : str, optional
-            The path in the heirarchy to the nuclide array in an HDF5 file.
+            The path in the hierarchy to the data table in an HDF5 file.
         """
-        
+
         cdef char * c_filename
         filename_bytes = filename.encode('UTF-8')
         c_filename = filename_bytes
         cdef char * c_datapath
         datapath_bytes = datapath.encode('UTF-8')
         c_datapath = datapath_bytes
-        cdef char * c_nucpath
-        nucpath_bytes = nucpath.encode('UTF-8')
-        c_nucpath = nucpath_bytes
-        self._inst.write_hdf5(c_filename, c_datapath, c_nucpath)
+        self._inst.write_hdf5(c_filename, c_datapath)
 
     def add_material(self, key, mat):
         """Add a Material to this material library.
         Parameters
         ----------
         key : str or int (converted to str)
-            key to regisgter the material, if material has no name attribute
+            key to register the material, if material has no name attribute
             will be added as the name metadata of the material
         mat : Material
             PyNE material object be added to this material library
         """
-        
+
         cdef std_string c_matname
         if isinstance(key, basestring):
             key = key.encode('UTF-8')
@@ -198,7 +187,7 @@ cdef class _MaterialLibrary:
         Parameters
         ----------
         key : str or int (converted to str)
-            key of the material to return 
+            key of the material to return
         """
         # Get the correct cpp_material
         cdef cpp_material.Material c_mat
@@ -211,7 +200,7 @@ cdef class _MaterialLibrary:
 
         # build a PyNE Material object form the cpp_material
         py_mat = material.Material(free_mat = False)
-        (< material._Material > py_mat).mat_pointer = new cpp_material.Material(c_mat.comp, c_mat.mass, c_mat.density, c_mat.atoms_per_molecule, c_mat.metadata)        
+        (< material._Material > py_mat).mat_pointer = new cpp_material.Material(c_mat.comp, c_mat.mass, c_mat.density, c_mat.atoms_per_molecule, c_mat.metadata)
         return py_mat
 
     def merge(self, mat_library):
@@ -219,11 +208,11 @@ cdef class _MaterialLibrary:
         Parameters
         ----------
         mat_library : MaterialLibrary
-            Material Library to merge 
+            Material Library to merge
         """
 
         if isinstance(mat_library, _MaterialLibrary):
-            self._inst.merge(mat_library._inst)
+            self._inst.merge(<cpp_material_library.MaterialLibrary*>(<_MaterialLibrary>mat_library)._inst)
         else:
             raise TypeError("the material library must be a MaterialLibrary but is a "
                             "{0}".format(type(mat_library)))
@@ -294,7 +283,7 @@ cdef class _MaterialLibrary:
         if isinstance(key, _INTEGRAL_TYPES):
             key = str(key).encode('UTF-8')
         else:
-            key = key.encode('UTF-8') 
+            key = key.encode('UTF-8')
         value_proxy = material.Material(value, free_mat=not isinstance(value, material._Material))
         self._inst.add_material(key, deref((<material._Material> value_proxy).mat_pointer))
 
@@ -306,7 +295,7 @@ cdef class _MaterialLibrary:
             key = key.encode('UTF-8')
         elif isinstance(key, _INTEGRAL_TYPES):
             key = str(key).encode('UTF-8')
-        
+
         c_matname = key
         c_mat = self._inst.get_material_ptr(<std_string>c_matname)
 
@@ -314,7 +303,7 @@ cdef class _MaterialLibrary:
         py_mat = material.Material(free_mat = False)
         (< material._Material > py_mat).mat_pointer = c_mat
         return py_mat
-    
+
     def __len__(self):
         if hasattr(self, 'mat_library'):
             return self.mat_library.size()
@@ -344,9 +333,9 @@ class MaterialLibrary(_MaterialLibrary, collections.MutableMapping):
         libs = ["{0!r}={1!r}".format(k, m) for k, m in self.items()]
         libs = "{" + ", ".join(libs) + "}"
         return "pyne.material.MaterialLibrary({0})".format(libs)
-        
-        
-# Python dict to u_map<string, Material *> 
+
+
+# Python dict to u_map<string, Material *>
 cdef cpp_umap[std_string, cpp_material.Material*] dict_to_map_str_matp(dict pydict):
     cdef cpp_material.Material * cpp_matp
     cdef cpp_umap[std_string, matp ] cppmap = cpp_umap[std_string, matp ]()
