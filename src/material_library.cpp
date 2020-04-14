@@ -60,13 +60,9 @@ void pyne::MaterialLibrary::from_hdf5(const std::string& filename,
   int library_length = material_library.size();
   for (int i = 0; i < file_num_materials; i++) {
     pyne::Material mat = pyne::Material();
-    std::cout  << __LINE__ << std::endl;
     mat._load_comp_protocol1(db, full_datapath, nucpath, i);
-    std::cout  << __LINE__ << std::endl;
     (*this).add_material(mat);
-    std::cout << i <<"/"<< file_num_materials << std::endl; 
   } 
-    std::cout  << __LINE__ << std::endl;
 }
 
 void pyne::MaterialLibrary::merge(pyne::MaterialLibrary mat_lib) {
@@ -243,34 +239,27 @@ void pyne::MaterialLibrary::replace(int num, pyne::Material mat) {
 
 void pyne::MaterialLibrary::write_hdf5(const std::string& filename,
                                        const std::string& datapath) {
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   // Turn off annoying HDF5 errors
   H5Eset_auto2(H5E_DEFAULT, NULL, NULL);
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
 
   // Set file access properties so it closes cleanly
   hid_t fapl;
   fapl = H5Pcreate(H5P_FILE_ACCESS);
   H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG);
 
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   hid_t matlib_grp_id;
   hid_t data_id;
   hid_t db;
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   if (!pyne::file_exists(filename)) {
     // Create the file
     db = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, fapl);
   }
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   // Check if /material exist and what type it is
   herr_t status;
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   H5O_info_t object_info;
   status = H5Eset_auto2(H5E_DEFAULT, NULL, NULL);
   status =
       H5Oget_info_by_name(db, "/material_library", &object_info, H5P_DEFAULT);
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   // check if "/material" exists
   if (status == 0) {
     // "/material_library" not a group: fail!
@@ -285,7 +274,6 @@ void pyne::MaterialLibrary::write_hdf5(const std::string& filename,
     matlib_grp_id = H5Gcreate2(db, "/material_library", H5P_DEFAULT,
                                H5P_DEFAULT, H5P_DEFAULT);
   }
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   // Check is /material exist as a Group
   // Group "/material/datapath" does not exist create it
   if (!h5wrap::path_exists(db, "/material_library" + datapath)) {
@@ -294,37 +282,25 @@ void pyne::MaterialLibrary::write_hdf5(const std::string& filename,
   } else {
     data_id = H5Gopen2(matlib_grp_id, datapath.c_str(), H5P_DEFAULT);
   }
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   std::string full_datapath = "/material_library" + datapath + "/composition";
   std::string nucpath = "/material_library" + datapath + "/nuclidelist";
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   write_hdf5_nucpath(db, nucpath);
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   for (auto mat : material_library) {
     std::vector<int> nuc_list;
     nuc_list.assign(nuclist.begin(), nuclist.end());
-    std::cout  << __LINE__ << std::endl;
     mat.second->write_hdf5_datapath(db, full_datapath, -0.0, 100, nuc_list);
-    std::cout  << __LINE__ << std::endl;
   }
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   H5Gclose(data_id);
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   H5Gclose(matlib_grp_id);
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   H5Fclose(db);
 }
 void pyne::MaterialLibrary::write_hdf5_nucpath(hid_t db, std::string nucpath) {
   //
   // Read in nuclist if available, write it out if not
   //
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   bool nucpath_exists = h5wrap::path_exists(db, nucpath);
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   int nuc_size = nuclist.size();
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   hsize_t nuc_dims[1];
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
 
   // Create the data if it doesn't exist
   int nuc_data[nuc_size];
@@ -333,20 +309,15 @@ void pyne::MaterialLibrary::write_hdf5_nucpath(hid_t db, std::string nucpath) {
     nuc_data[i] = nuc;
     i++;
   }
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   nuc_dims[0] = nuc_size;
   hid_t nuc_space = H5Screate_simple(1, nuc_dims, NULL);
   hid_t nuc_set = H5Dcreate2(db, nucpath.c_str(), H5T_NATIVE_INT, nuc_space,
                              H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   H5Dwrite(nuc_set, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, nuc_data);
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
   H5Dflush(nuc_set);
-    H5Fflush(db, H5F_SCOPE_GLOBAL);
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
+  H5Fflush(db, H5F_SCOPE_GLOBAL);
 
   H5Dclose(nuc_set);
-    std::cout  <<__FILE__ <<":"<< __LINE__ << std::endl;
 }
 
 void pyne::MaterialLibrary::append_to_nuclist(pyne::Material mat) {
