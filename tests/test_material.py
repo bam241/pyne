@@ -181,14 +181,14 @@ def test_hdf5_protocol_1_old():
 
     # Loads with protocol 1 now.
     m = Material()
-    m.from_hdf5('proto1.h5', '/material',  -3, 1)
+    m.from_hdf5('proto1.h5', '/mat_name',  -3, 1)
     assert_equal(m.density, 2.72)
     assert_equal(m.atoms_per_molecule, 8.0)
     assert_equal(m.mass, 33.6)
     assert_equal(m.comp, {922350000: 0.04, 922380000: 0.96})
     assert_equal(m.metadata['comment'], 'fire in the disco - 8')
 
-    m = from_hdf5('proto1.h5', '/material', 3, 1)
+    m = from_hdf5('proto1.h5', '/mat_name', 3, 1)
     assert_equal(m.density, 2.72)
     assert_equal(m.atoms_per_molecule, 4.0)
     assert_equal(m.mass, 16.8)
@@ -244,28 +244,36 @@ def test_hdf5_protocol_1():
     # Test material writing
     leu = Material({'U235': 0.04, 'U238': 0.96}, 4.2, 2.72, 1.0)
     leu.metadata['comment'] = 'first light'
-    leu.write_hdf5('proto1.h5', chunksize=10)
-
+    leu.write_hdf5('proto1.h5')
+    
     for i in range(2, 11):
         leu = Material({'U235': 0.04, 'U238': 0.96}, i*4.2, 2.72, 1.0*i)
         leu.metadata['comment'] = 'fire in the disco - {0}'.format(i)
         leu.write_hdf5('proto1.h5')
 
     # Loads with protocol 1 now.
-    m = Material()
-    m.from_hdf5('proto1.h5', '/material', -3, 1)
+    for i in range(2, 11):
+        m = Material()
+        m.from_hdf5('proto1.h5', '/mat_name', i-1, 1)
+        assert_equal(m.density, 2.72)
+        assert_equal(m.atoms_per_molecule, 1.0*i)
+        assert_equal(m.mass, i*4.2)
+        assert_equal(m.comp, {922350000: 0.04, 922380000: 0.96})
+        assert_equal(m.metadata['comment'], 'fire in the disco - {0}'.format(i))
+    
+    m = from_hdf5('proto1.h5', '/mat_name', -1, 1)
     assert_equal(m.density, 2.72)
-    assert_equal(m.atoms_per_molecule, 8.0)
-    assert_equal(m.mass, 33.6)
+    assert_equal(m.atoms_per_molecule, 10.0)
+    assert_equal(m.mass, 42.0)
     assert_equal(m.comp, {922350000: 0.04, 922380000: 0.96})
-    assert_equal(m.metadata['comment'], 'fire in the disco - 8')
+    assert_equal(m.metadata['comment'], 'fire in the disco - 10')
 
-    m = from_hdf5('proto1.h5', '/material', 3, 1)
+    m = from_hdf5('proto1.h5', '/mat_name', 0, 1)
     assert_equal(m.density, 2.72)
-    assert_equal(m.atoms_per_molecule, 5.0)
-    assert_equal(m.mass, 21.0)
+    assert_equal(m.atoms_per_molecule, 1.0)
+    assert_equal(m.mass, 4.2) 
     assert_equal(m.comp, {922350000: 0.04, 922380000: 0.96})
-    assert_equal(m.metadata['comment'], 'fire in the disco - 5')
+    assert_equal(m.metadata['comment'], 'first light')
     os.remove('proto1.h5')
 
 class TestMaterialMethods(TestCase):
@@ -1228,7 +1236,7 @@ def test_openmc():
     leu.write_hdf5('leu.h5')
 
     leu_read = Material()
-    leu_read.from_hdf5('leu.h5', '/material')
+    leu_read.from_hdf5('leu.h5', '/mat_name')
 
     mass = leu.openmc()
     assert_equal(mass, mass_exp)
@@ -1339,7 +1347,16 @@ def test_phits():
                 '     92235.15c -7.6400e-01\n'
                 '     92238.25c -1.8336e+01\n')
     assert_equal(mass, mass_exp)
-    
+
+    mass_frac = leu.phits(mult_den=False)
+    mass_frac_exp = ('C name: leu\n'
+                     'C comments: this is a long comment that will definitly go over the 80 character\n'
+                     'C  limit, for science\n'
+                     'M[ 2 ]\n'
+                     '     92235.15c -4.0000e-02\n'
+                     '     92238.25c -9.6000e-01\n')
+    assert_equal(mass_frac, mass_frac_exp)
+
     atom = leu.phits(frac_type='atom')
     atom_exp = ('C name: leu\n'
                 'C comments: this is a long comment that will definitly go over the 80 character\n'
@@ -1348,6 +1365,15 @@ def test_phits():
                 '     92235.15c 1.9575e-03\n'
                 '     92238.25c 4.6386e-02\n')
     assert_equal(atom, atom_exp)
+
+    atom_frac = leu.phits(frac_type='atom', mult_den=False)
+    atom_frac_exp = ('C name: leu\n'
+                     'C comments: this is a long comment that will definitly go over the 80 character\n'
+                     'C  limit, for science\n'
+                     'M[ 2 ]\n'
+                     '     92235.15c 4.0491e-02\n'
+                     '     92238.25c 9.5951e-01\n')
+    assert_equal(atom_frac, atom_frac_exp)
 
 def test_mcnp():
 
@@ -1371,6 +1397,17 @@ def test_mcnp():
                 '     92238.25c -1.8336e+01\n')
     assert_equal(mass, mass_exp)
 
+    mass_frac = leu.mcnp(mult_den=False)
+    mass_frac_exp = ('C name: leu\n'
+                     'C density = 19.10000\n'
+                     'C source: Some URL\n'
+                     'C comments: this is a long comment that will definitly go over the 80 character\n'
+                     'C  limit, for science\n'
+                     'm2\n'
+                     '     92235.15c -4.0000e-02\n'
+                     '     92238.25c -9.6000e-01\n')
+    assert_equal(mass_frac, mass_frac_exp)
+
     atom = leu.mcnp(frac_type='atom')
     atom_exp = ('C name: leu\n'
                 'C density = 19.10000\n'
@@ -1381,7 +1418,18 @@ def test_mcnp():
                 '     92235.15c 1.9575e-03\n'
                 '     92238.25c 4.6386e-02\n')
     assert_equal(atom, atom_exp)
-    
+
+    atom_frac = leu.mcnp(frac_type='atom', mult_den=False)
+    atom_frac_exp = ('C name: leu\n'
+                     'C density = 19.10000\n'
+                     'C source: Some URL\n'
+                     'C comments: this is a long comment that will definitly go over the 80 character\n'
+                     'C  limit, for science\n'
+                     'm2\n'
+                     '     92235.15c 4.0491e-02\n'
+                     '     92238.25c 9.5951e-01\n')
+    assert_equal(atom_frac, atom_frac_exp)
+
 def test_mcnp_mat0():
 
     leu = Material(nucvec={'U235': 0.04, 'U236': 0.0, 'U238': 0.96},

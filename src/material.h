@@ -130,44 +130,44 @@ namespace pyne
     /// Loads the matrial composition from an HDF5 file according to the layout
     /// defined by protocol 1.  This protocol should be used in favor of protocol 0.
     /// \param db HDF5 id for the open HDF5 file.
-    /// \param mat_name Path to the base node for the material in \a db.
+    /// \param datapath Path to the base node for the material in \a db.
     /// \param row The index to read out, may be negative.
-    void _load_comp_protocol1(hid_t db, std::string mat_name, int row);
+    void _load_comp_protocol1(hid_t db, std::string datapath, int row);
     
     /// Loads the matrial composition from an HDF5 file according to the layout
     /// defined by protocol 1.  This protocol should be used in favor of protocol 0.
     /// \param db HDF5 id for the open HDF5 file.
-    /// \param mat_name Path to the base node for the material in a db.
+    /// \param datapath Path to the base node for the material in a db.
     /// \param nucpath Path to the base node for nuclide list in a db.
     /// \param row The index to read out, may be negative.
-    void _load_comp_protocol1(hid_t db, std::string mat_name, std::string nucpath, int row);
+    void _load_comp_protocol1(hid_t db, std::string datapath, std::string nucpath, int row);
     
     /// Loads a material from an HDF5 file into this object.
     /// \param filename Path on disk to the HDF5 file.
-    /// \param mat_name Path to the the material in the file.
+    /// \param datapath Path to the the material in the file.
     /// \param row The index to read out, may be negative.
     /// \param protocol Flag for layout of material on disk.
-    void from_hdf5(char * filename, char * mat_name, int row=-1, int protocol=1);
+    void from_hdf5(char * filename, char * datapath, int row=-1, int protocol=1);
 
     /// Loads a material from an HDF5 file into this object.
     /// \param filename Path on disk to the HDF5 file.
-    /// \param mat_name Path to the the material in the file.
+    /// \param datapath Path to the the material in the file.
     /// \param row The index to read out, may be negative.
     /// \param protocol Flag for layout of material on disk.
-    void from_hdf5(std::string filename, std::string mat_name="/material",
+    void from_hdf5(std::string filename, std::string datapath="/mat_name",
                                                           int row=-1, int protocol=1);
    
   private:
 
     /// Detect the HDF5 file assuming protocol1.
     /// \param db HDF5 id for the open HDF5 file.
-    /// \param mat_name Path to look for the material in the file.
+    /// \param datapath Path to look for the material in the file.
     /// Return options are: 
-    ///     -"-1": mat_name and "/material" do not exist
-    ///     - "0": mat_name and/or "/material" exist but either as a group or a dataset
-    ///     - "1": mat_name exists as a dataset -> old layout
+    ///     -"-1": datapath and "/material" do not exist
+    ///     - "0": datapath and/or "/material" exist but either as a group or a dataset
+    ///     - "1": datapath exists as a dataset -> old layout
     ///     - "2": "/material" exists as a group-> new layout
-    int detect_hdf5_layout(hid_t db, std::string mat_name);
+    int detect_hdf5_layout(hid_t db, std::string datapath);
   
     enum prot1_layout {path_donotexists=-1, unknown, old_layout, new_layout};
   
@@ -176,13 +176,13 @@ namespace pyne
     /// Writes this material out to an HDF5 file.
     /// This happens according to protocol 1.
     /// \param filename Path on disk to the HDF5 file.
-    /// \param mat_name Path to the the material in the file.
+    /// \param datapath Path to the the material in the file.
     /// \param row The index to read out, may be negative. Also note that this is a
     ///            float.  A value of -0.0 indicates that the material should be
     ///            appended to the end of the dataset.
     /// \param chunksize The chunksize for all material data on disk.
     /// New write_hdf5 which fallback on the old one when required
-    void write_hdf5(std::string filename, std::string mat_name="/material", 
+    void write_hdf5(std::string filename, std::string datapath="/mat_name", 
         float row=-0.0, int chunksize= 100);
 
     /// Writes this nucpath to an HDF5 file.
@@ -196,7 +196,7 @@ namespace pyne
     /// Writes this datapath to an HDF5 file.
     /// This happens according to protocol 1.
     /// \param db HDF5 id for the open HDF5 file.
-    /// \param mat_name Path to the the material in the file.
+    /// \param datapath Path to the the material in the file.
     /// \param nucpath Path to the nuclides list in the file.
     /// \param row The index to read out, may be negative. Also note that this is a
     ///            float.  A value of -0.0 indicates that the material should be
@@ -204,7 +204,7 @@ namespace pyne
     /// \param chunksize The chunksize for all material data on disk.
     /// Only the nuclides present in the nuclides list can be part of the composition 
     /// of the material, additional nuclides will be ignored, and a warning will be thrown
-    void write_hdf5_datapath(hid_t db, std::string mat_name, float row, int chunksize, 
+    void write_hdf5_datapath(hid_t db, std::string datapath, float row, int chunksize, 
         std::vector<int> nuclides);
     /// Writes this material out to an HDF5 file in the old data structure
     /// format.
@@ -251,9 +251,9 @@ namespace pyne
     std::string openmc(std::string fact_type = "mass");
 
     /// Return an mcnp input deck record as a string
-    std::string mcnp(std::string frac_type = "mass");
+    std::string mcnp(std::string frac_type = "mass", bool mult_den = true);
     /// Return an phits input deck record as a string
-    std::string phits(std::string frac_type = "mass");
+    std::string phits(std::string frac_type = "mass", bool mult_den = true);
     /// return the compo fraction writen ala "mcnp"
     std::string mcnp_frac(std::map<int, double> fracs, std::string frac_type = "");
     ///
@@ -338,10 +338,10 @@ namespace pyne
     /// atoms per molecule (atoms_per_molecule) in this function using \a apm.
     double mass_density(double num_dens=-1.0, double apm=-1.0);
     // void print_material( pyne::Material test_mat);
-    /// Computes, sets, and returns the mass density when the material density is
-    /// definied otherwise return fraction. Fraction density is returned per atom 
+    /// Computes, sets, and returns the mass density if \a mult_den is true
+    /// otherwise return mass fraction. Fraction density is returned per atom
     /// (default) in atom per barn cm or as a mass density.
-    std::map<int, double> get_density_frac(std::string frac_type="atom");
+    std::map<int, double> get_density_frac(std::string frac_type="atom", bool mult_den=true);
     /// Computes and returns the number density of the material using the
     /// mass density if \a mass_dens is greater than or equal to zero.  If
     /// \a mass_dens is negative, the denisty member variable is used instead.
