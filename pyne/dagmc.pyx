@@ -690,6 +690,7 @@ def cell_materials(hdf5, **kwargs):
     ml = MaterialLibrary()
     ml.from_hdf5(hdf5, datapath=datapath)
     mat_assigns = cell_material_assignments(hdf5)
+    print(ml)
     cell_mats = {}
     for cell_num, mat_name in mat_assigns.items():
         if cell_num is None:
@@ -699,6 +700,8 @@ def cell_materials(hdf5, **kwargs):
         else:
             cell_mats[cell_num] = ml[mat_name]
 
+    print("cell_mats", cell_mats)
+    print("out of dagmc")
     return cell_mats
 
 def find_implicit_complement():

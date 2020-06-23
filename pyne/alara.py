@@ -37,6 +37,7 @@ response_strings = {'decay_heat': 'Total Decay Heat',
                     'wdr': 'WDR/Clearance index',
                     'photon_source': 'Photon Source Distribution'}
 
+
 def mesh_to_fluxin(flux_mesh, flux_tag, fluxin="fluxin.out",
                    reverse=False, sub_voxel=False, cell_fracs=None,
                    cell_mats=None):
@@ -240,7 +241,8 @@ def response_to_hdf5(filename, response, chunkshape=(10000,)):
     response_dtype = _make_response_dtype(response)
 
     filters = tb.Filters(complevel=1, complib='zlib')
-    h5_filename = os.path.join(os.path.dirname(filename), ''.join([response, '.h5']))
+    h5_filename = os.path.join(os.path.dirname(
+        filename), ''.join([response, '.h5']))
     h5f = tb.open_file(h5_filename, 'w', filters=filters)
     tab = h5f.create_table('/', 'data', response_dtype, chunkshape=chunkshape)
 
@@ -263,9 +265,9 @@ def response_to_hdf5(filename, response, chunkshape=(10000,)):
             state = response_start_state
         # get decay times
         elif state == response_start_state and \
-             len(decay_times) == 0 and \
-             ('isotope\t shutdown' in line):
-                decay_times = read_decay_times(line)
+                len(decay_times) == 0 and \
+                ('isotope\t shutdown' in line):
+            decay_times = read_decay_times(line)
         # get zone idx
         elif 'Zone #' in line:
             zone_idx = _get_zone_idx(line)
@@ -274,22 +276,22 @@ def response_to_hdf5(filename, response, chunkshape=(10000,)):
         # skip lines if we haven't started the response or
         # the lines don't contain wanted data
         elif state == response_start_state and \
-             _is_data(line):
-    
+                _is_data(line):
+
             tokens = line.strip().split()
             # put data into table
             # format of each row: zone_idx, nuc, time, decay_heat
             nuc = tokens[0].strip()
             if nuc.lower() == 'total':
                 nuc = nuc.upper()
-            for dt, response_value in zip(decay_times,tokens[1:]):
+            for dt, response_value in zip(decay_times, tokens[1:]):
                 j = (count-1) % chunksize
                 rows[j] = (zone_idx, nuc, dt, response_value)
                 if count % chunksize == 0:
                     tab.append(rows)
                     rows = np.empty(chunksize, dtype=response_dtype)
                 count += 1
-    
+
     if count % chunksize != 0:
         tab.append(rows[:j+1])
 
@@ -505,6 +507,7 @@ def record_to_geom(mesh, cell_fracs, cell_mats, geom_file, matlib_file,
     # Create geometry information header. Note that the shape of the geometry
     # (rectangular) is actually inconsequential to the ALARA calculation so
     # unstructured meshes are not adversely affected.
+    print("ala 1")
     geometry = u'geometry rectangular\n\n'
 
     # Create three strings in order to create all ALARA input blocks in a
@@ -512,15 +515,21 @@ def record_to_geom(mesh, cell_fracs, cell_mats, geom_file, matlib_file,
     volume = u'volume\n'  # volume input block
     mat_loading = u'mat_loading\n'  # material loading input block
     mixture = u''  # mixture blocks
+    print("ala 12")
 
     unique_mixtures = []
     if not sub_voxel:
         for i, mat, ve in mesh:
             volume += u'    {0: 1.6E}    zone_{1}\n'.format(
                 mesh.elem_volume(ve), i)
-
+            print("ala 120")
             ve_mixture = {}
+            print(cell_mats)
+            print("ala 120b")
+
             for row in cell_fracs[cell_fracs['idx'] == i]:
+                print("ala 120c")
+                print(cell_mats)
                 cell_mat = cell_mats[row['cell']]
                 name = cell_mat.metadata['name']
                 if _is_void(name):
@@ -529,6 +538,7 @@ def record_to_geom(mesh, cell_fracs, cell_mats, geom_file, matlib_file,
                     ve_mixture[name] = np.round(row['vol_frac'], sig_figs)
                 else:
                     ve_mixture[name] += np.round(row['vol_frac'], sig_figs)
+            print("ala 121")
 
             if ve_mixture not in unique_mixtures:
                 unique_mixtures.append(ve_mixture)
@@ -538,11 +548,16 @@ def record_to_geom(mesh, cell_fracs, cell_mats, geom_file, matlib_file,
                     mixture += u'    material {0} 1 {1}\n'.format(key, value)
 
                 mixture += u'end\n\n'
+            print("ala 122")
 
             mat_loading += u'    zone_{0}    mix_{1}\n'.format(i,
-                                                              unique_mixtures.index(ve_mixture))
+                                                               unique_mixtures.index(ve_mixture))
     else:
+        print("ala 123")
+
         ves = list(mesh.iter_ve())
+        print("ala 124")
+
         sve_count = 0
         for row in cell_fracs:
             if len(cell_mats[row['cell']].comp) != 0:
@@ -558,6 +573,9 @@ def record_to_geom(mesh, cell_fracs, cell_mats, geom_file, matlib_file,
                 mat_loading += u'    zone_{0}    {1}\n'.format(
                     sve_count, name)
                 sve_count += 1
+        print("ala 125")
+
+    print("ala 13")
 
     volume += u'end\n\n'
     mat_loading += u'end\n\n'
@@ -566,6 +584,7 @@ def record_to_geom(mesh, cell_fracs, cell_mats, geom_file, matlib_file,
         f.write(geometry + volume + mat_loading + mixture)
 
     matlib = u''  # ALARA material library string
+    print("ala 14")
 
     printed_mats = []
     print_void = False
@@ -577,17 +596,19 @@ def record_to_geom(mesh, cell_fracs, cell_mats, geom_file, matlib_file,
         if name not in printed_mats:
             printed_mats.append(name)
             matlib += u'{0}    {1: 1.6E}    {2}\n'.format(name, mat.density,
-                                                         len(mat.comp))
+                                                          len(mat.comp))
             for nuc, comp in mat.comp.items():
                 matlib += u'{0}    {1: 1.6E}    {2}\n'.format(alara(nuc),
-                                                             comp*100.0, znum(nuc))
+                                                              comp*100.0, znum(nuc))
             matlib += u'\n'
 
     if print_void:
         matlib += u'# void material\nmat_void 0.0 1\nhe 1 2\n'
+    print("ala 15")
 
     with open(matlib_file, 'w') as f:
         f.write(matlib)
+    print("ala 16")
 
 
 def _is_void(name):
@@ -626,16 +647,17 @@ def mesh_to_geom(mesh, geom_file, matlib_file):
     matlib = u""  # ALARA material library string
 
     for i, mat, ve in mesh:
-        volume += u"    {0: 1.6E}    zone_{1}\n".format(mesh.elem_volume(ve), i)
+        volume += u"    {0: 1.6E}    zone_{1}\n".format(
+            mesh.elem_volume(ve), i)
         mat_loading += u"    zone_{0}    mix_{0}\n".format(i)
         matlib += u"mat_{0}    {1: 1.6E}    {2}\n".format(i, mesh.density[i],
-                                                         len(mesh.comp[i]))
+                                                          len(mesh.comp[i]))
         mixture += (u"mixture mix_{0}\n"
                     u"    material mat_{0} 1 1\nend\n\n".format(i))
 
         for nuc, comp in mesh.comp[i].items():
             matlib += u"{0}    {1: 1.6E}    {2}\n".format(alara(nuc), comp*100.0,
-                                                         znum(nuc))
+                                                          znum(nuc))
         matlib += u"\n"
 
     volume += u"end\n\n"
@@ -1051,6 +1073,7 @@ def _get_subvoxel_array(mesh, cell_mats):
 
     return subvoxel_array
 
+
 def _make_response_dtype(response_name, data_length=1):
 
     return np.dtype([
@@ -1059,7 +1082,7 @@ def _make_response_dtype(response_name, data_length=1):
         ('time', 'S20'),
         (response_name, np.float64, data_length)
     ])
- 
+
 
 def _convert_unit_to_s(dt):
     """
@@ -1165,13 +1188,14 @@ def responses_output_zone(responses=None, wdr_file=None, alara_params=None):
         output_strings['wdr'] = ''.join(["       wdr ", wdr_file])
     if 'photon_source' in responses:
         alara_lib = get_alara_lib(alara_params)
-        output_strings["photon_source"] =  ''.join(["      photon_source ",
-            alara_lib, " phtn_src 1 2e7"])
+        output_strings["photon_source"] = ''.join(["      photon_source ",
+                                                   alara_lib, " phtn_src 1 2e7"])
     output_zone = ["output zone"]
     for response in responses:
         output_zone.append(output_strings[response])
     output_zone.append("end")
     return '\n'.join(output_zone)
+
 
 def _is_data(line):
     """
@@ -1202,7 +1226,7 @@ def _is_data(line):
         return True
     except:
         return False
-    
+
 
 def read_decay_times(line):
     """
@@ -1224,7 +1248,7 @@ def read_decay_times(line):
     for i in range(2, len(tokens), 2):
         decay_times.append(''.join([tokens[i], ' ', tokens[i+1]]))
     return decay_times
-    
+
 
 def _get_zone_idx(line):
     """
@@ -1239,7 +1263,7 @@ def _get_zone_idx(line):
     -------
     int, zone index
     """
-    
+
     last_word = line.strip().split()[-1]
     return int(last_word.split('_')[-1])
 

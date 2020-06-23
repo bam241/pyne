@@ -81,9 +81,9 @@ cdef class _MaterialLibrary:
                 # Python2: basestring = (std + unicode)
                 c_filename = lib.encode('UTF-8')
                 c_datapath = datapath.encode('UTF-8')
-                self._inst = new cpp_material_library.MaterialLibrary(c_filename, c_datapath)
+                self._inst.reset(new cpp_material_library.MaterialLibrary(c_filename, c_datapath))
             elif isinstance(lib, collections.Mapping) or isinstance(lib, collections.Sequence):
-                self._inst = new cpp_material_library.MaterialLibrary()
+                self._inst .reset(new cpp_material_library.MaterialLibrary())
                 for key in sorted(lib.keys()):
                     mat = lib[key]
                     self.__setitem__(key, material.ensure_material(mat))
@@ -91,11 +91,11 @@ cdef class _MaterialLibrary:
                 msg = "Could not initialize library with lib type {0!r}"
                 raise TypeError(msg.format(type(lib)))
         else:
-            self._inst = new cpp_material_library.MaterialLibrary()
+            self._inst.reset(new cpp_material_library.MaterialLibrary())
 
-    def __dealloc__(self):
-        """MaterialLibrary C++ destructor."""
-        del self._inst
+    # def __dealloc__(self):
+    #     """MaterialLibrary C++ destructor."""
+    #     del self._inst
 
     def from_hdf5(self, filename, datapath):
         """Loads data from an HDF5 file into this material library.
@@ -114,7 +114,7 @@ cdef class _MaterialLibrary:
         """
         c_filename = filename.encode('UTF-8')
         c_datapath = datapath.encode('UTF-8')
-        self._inst.from_hdf5(c_filename, c_datapath)
+        deref(self._inst).from_hdf5(c_filename, c_datapath)
 
     def write_hdf5(self, filename, datapath="/materials"):
         """Writes this material library to an HDF5 file.
@@ -127,7 +127,7 @@ cdef class _MaterialLibrary:
         """
         c_filename = filename.encode('UTF-8')
         c_datapath = datapath.encode('UTF-8')
-        self._inst.write_hdf5(c_filename, c_datapath)
+        deref(self._inst).write_hdf5(c_filename, c_datapath)
 
     def remove_material(self, mat_name):
         """Remove a Material from this material library.
@@ -137,7 +137,7 @@ cdef class _MaterialLibrary:
         """
         if isinstance(mat_name, basestring):
             c_matname = mat_name.encode('UTF-8')
-            self._inst.del_material(< std_string > c_matname)
+            deref(self._inst).del_material(< std_string > c_matname)
         else:
             raise TypeError("the argument must be a string (material name) but is a "
                             "{0}".format(type(mat_name)))
@@ -149,18 +149,20 @@ cdef class _MaterialLibrary:
         mat_library : MaterialLibrary
             Material Library to merge
         """
+        cdef shared_ptr[cpp_material_library.MaterialLibrary] cpp_mat_lib
 
         if isinstance(mat_library, _MaterialLibrary):
-            self._inst.merge(< cpp_material_library.MaterialLibrary*>( < _MaterialLibrary > mat_library)._inst)
+            cpp_mat_lib = (<_MaterialLibrary> mat_library)._inst
+            deref(self._inst).merge(cpp_mat_lib)
         else:
             raise TypeError("the material library must be a MaterialLibrary but is a "
                             "{0}".format(type(mat_library)))
 
     cdef cpp_set[std_string] get_keylist(self):
-        return self._inst.get_keylist()
+        return deref(self._inst).get_keylist()
 
     cdef cpp_set[int] get_nuclist(self):
-        return self._inst.get_nuclist()
+        return deref(self._inst).get_nuclist()
 
     def load_json(self, json):
         """load_json(json)
@@ -172,7 +174,7 @@ cdef class _MaterialLibrary:
             An object-type JSON value.
 
         """
-        self._inst.load_json(deref(( < jsoncpp.Value > json)._inst))
+        deref(self._inst).load_json(deref(( < jsoncpp.Value > json)._inst))
 
     def dump_json(self):
         """dump_json()
@@ -185,7 +187,7 @@ cdef class _MaterialLibrary:
 
         """
         cdef jsoncpp.Value val = jsoncpp.Value(view=False)
-        val._inst[0] = self._inst.dump_json()
+        val._inst[0] = deref(self._inst).dump_json()
         return val
 
     def from_json(self, filename):
@@ -201,7 +203,7 @@ cdef class _MaterialLibrary:
         cdef char * c_filename
         filename_bytes = filename.encode('UTF-8')
         c_filename = filename_bytes
-        self._inst.from_json(c_filename)
+        deref(self._inst).from_json(c_filename)
 
     def write_json(self, filename):
         """write_json(filename)
@@ -215,7 +217,7 @@ cdef class _MaterialLibrary:
 
         """
         filename = filename.encode()
-        self._inst.write_json(filename)
+        deref(self._inst).write_json(filename)
 
     def __setitem__(self, key, value):
         """Add a Material to this material library, if the material key already exist it will be overwritten.
@@ -230,25 +232,27 @@ cdef class _MaterialLibrary:
         cdef cpp_pair[std_string, cpp_material.Material] item
         value_proxy = material.Material(
             value, free_mat=not isinstance(value, material._Material))
-        self._inst.add_material(ensure_material_key(key), deref(( < material._Material > value_proxy).mat_pointer))
+        deref(self._inst).add_material(ensure_material_key(key), 
+                                       <shared_ptr[cpp_material.Material]>(
+                                           value_proxy.mat_pointer))
 
     def __getitem__(self, key):
         cdef shared_ptr[cpp_material.Material] c_mat
-        c_mat = self._inst.get_material_ptr(< std_string > ensure_material_key(key))
+        c_mat = deref(self._inst).get_material_ptr(< std_string > ensure_material_key(key))
 
         # build a PyNE Material object from the cpp_material
         py_mat = material.Material(free_mat=False)
-        ( < material._Material > py_mat).mat_pointer = c_mat.get()
+        ( < material._Material > py_mat).mat_pointer = c_mat
         return py_mat
 
     def __len__(self):
-        return self._inst.material_library.size()
+        return deref(self._inst).material_library.size()
 
     def __delitem__(self, key):
         self.del_material(ensure_material_key(key))
 
     def __iter__(self):
-        mat_lib_dict = map_to_dict_str_matp(self._inst.get_mat_library())
+        mat_lib_dict = map_to_dict_str_matp(deref(self._inst).get_mat_library())
         self._iter_mat_lib = mat_lib_dict
         mat_lib_iter = iter(mat_lib_dict)
         return mat_lib_iter
@@ -282,7 +286,7 @@ cdef cpp_umap[std_string, shared_ptr[cpp_material.Material]] dict_to_map_str_mat
     for key, value in pydict.items():
         py_mat = material.Material(free_mat=False)
         py_mat = value
-        cpp_matp = shared_ptr[cpp_material.Material](( < material._Material > py_mat).mat_pointer)
+        cpp_matp = py_mat.mat_pointer
         #cppmap[std_string(key)] = cpp_matp
         item = cpp_pair[std_string, shared_ptr[cpp_material.Material]](std_string( < char * > key),         cpp_matp)
         cppmap.insert(item)

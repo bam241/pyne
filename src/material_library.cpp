@@ -89,6 +89,11 @@ void pyne::MaterialLibrary::merge(pyne::MaterialLibrary* mat_lib) {
   merge(*mat_lib);
 }
 
+void pyne::MaterialLibrary::merge(
+    std::shared_ptr<pyne::MaterialLibrary> mat_lib) {
+  merge(mat_lib.get());
+}
+
 void pyne::MaterialLibrary::load_json(Json::Value json) {
   Json::Value::Members keys = json.getMemberNames();
   Json::Value::Members::const_iterator ikey = keys.begin();
@@ -186,16 +191,20 @@ void pyne::MaterialLibrary::add_material(pyne::Material mat) {
 
 void pyne::MaterialLibrary::add_material(const std::string& key,
                                          const pyne::Material& mat) {
-  pyne::shr_mat_ptr new_mat = std::make_shared<pyne::Material>(mat);
+  pyne::shr_mat_ptr mat_sptr = std::make_shared<pyne::Material>(mat);
+  add_material(key, mat_sptr);
+}
 
-  int mat_number = ensure_material_number(*new_mat);
-  if (!new_mat->metadata.isMember("name")) {
-    new_mat->metadata["name"] = key;
+void pyne::MaterialLibrary::add_material(
+    const std::string& key, const std::shared_ptr<pyne::Material>& mat) {
+  int mat_number = ensure_material_number(*mat.get());
+  if (!mat->metadata.isMember("name")) {
+    mat->metadata["name"] = key;
   }
-  append_to_nuclist(*new_mat);
+  append_to_nuclist(*mat.get());
   if (mat_number > 0) mat_number_set.insert(mat_number);
   keylist.insert(key);
-  material_library[key] = new_mat;
+  material_library[key] = mat;
 }
 
 void pyne::MaterialLibrary::del_material(const std::string& key) {

@@ -30,6 +30,7 @@ thisdir = os.path.dirname(__file__)
 responses = ['decay_heat', 'specific_activity', 'alpha_heat', 'beta_heat',
              'gamma_heat', 'wdr', 'photon_source']
 
+
 def _generate_exp_h5(filename, response, exp_h5_filename):
     """
     This function is used to generate expected h5 file for different responses.
@@ -81,12 +82,15 @@ def test_response_to_hdf5():
 
     for response in responses:
         # read  output.txt and write h5 file
-        filename = os.path.join(thisdir, "files_test_activation_responses", ''.join([response, '_output.txt']))
-        h5_filename = os.path.join(thisdir, "files_test_activation_responses", ''.join([response, '.h5']))
+        filename = os.path.join(
+            thisdir, "files_test_activation_responses", ''.join([response, '_output.txt']))
+        h5_filename = os.path.join(
+            thisdir, "files_test_activation_responses", ''.join([response, '.h5']))
         response_to_hdf5(filename, response)
 
         # generate expected h5 file
-        exp_h5_filename = os.path.join(thisdir, "files_test_activation_responses", ''.join(['exp_', response, '.h5']))
+        exp_h5_filename = os.path.join(
+            thisdir, "files_test_activation_responses", ''.join(['exp_', response, '.h5']))
         _generate_exp_h5(filename, response, exp_h5_filename)
 
         # compare two h5 files
@@ -118,12 +122,15 @@ def test_responses_to_hdf5_multiple():
 
     for response in responses:
         # read  output.txt and write h5 file
-        filename = os.path.join(thisdir, "files_test_activation_responses", 'multiple_output.txt')
-        h5_filename = os.path.join(thisdir, "files_test_activation_responses", ''.join([response, '.h5']))
+        filename = os.path.join(
+            thisdir, "files_test_activation_responses", 'multiple_output.txt')
+        h5_filename = os.path.join(
+            thisdir, "files_test_activation_responses", ''.join([response, '.h5']))
         response_to_hdf5(filename, response)
 
         # generate expected h5 file
-        exp_h5_filename = os.path.join(thisdir, "files_test_activation_responses", ''.join(['exp_', response, '.h5']))
+        exp_h5_filename = os.path.join(
+            thisdir, "files_test_activation_responses", ''.join(['exp_', response, '.h5']))
         _generate_exp_h5(filename, response, exp_h5_filename)
 
         # compare two h5 files
@@ -137,32 +144,33 @@ def test_responses_to_hdf5_multiple():
         os.remove(exp_h5_filename)
 
 
-
 def test_response_hdf5_to_mesh():
     """Tests the function photon source_h5_to_mesh."""
 
     for response in responses:
         # read  output.txt and write h5 file
-        filename = os.path.join(thisdir, "files_test_activation_responses", ''.join([response, '_output.txt']))
-        h5_filename = os.path.join(thisdir, "files_test_activation_responses", ''.join([response, '.h5']))
+        filename = os.path.join(
+            thisdir, "files_test_activation_responses", ''.join([response, '_output.txt']))
+        h5_filename = os.path.join(
+            thisdir, "files_test_activation_responses", ''.join([response, '.h5']))
         response_to_hdf5(filename, response)
         assert_true(os.path.exists(h5_filename))
-    
+
         mesh = Mesh(structured=True,
                     structured_coords=[[0, 1], [0, 1], [0, 1]])
-    
+
         tags = {('h-3', 'shutdown'): 'tag1', ('TOTAL', '12 h'): 'tag2'}
         response_hdf5_to_mesh(mesh, h5_filename, tags, response)
-    
+
         # create lists of lists of expected results
         tag1_answers = [9.5258e-18]
         tag2_answers = [9.5251e-18]
-    
+
         ves = list(mesh.structured_iterate_hex("xyz"))
         for i, ve in enumerate(ves):
             assert_equal(mesh.tag1[ve], tag1_answers[i])
             assert_equal(mesh.tag2[ve], tag2_answers[i])
-    
+
         if os.path.isfile(h5_filename):
             os.remove(h5_filename)
 
@@ -171,29 +179,47 @@ def _activation_responses_test_step1(activation_responses_run_dir):
     os.chdir(thisdir)
     # copy ../scripts/activation_responses.py to activation_responses_run_dir/activation_responses.py
     os.chdir("..")
+    print("1")
     folderpath = os.getcwd()
+    print("2")
     dst = os.path.join(activation_responses_run_dir, "activation_responses.py")
-    copyfile(os.path.join(folderpath, "scripts", "activation_responses.py"), dst)
+    print("13")
+    copyfile(os.path.join(folderpath, "scripts",
+                          "activation_responses.py"), dst)
+    print("14")
 
     # run activation_responses step1
     os.chdir(activation_responses_run_dir)
     os.system('python activation_responses.py step1')
+    print("15")
 
     # output files of activation_responses step1
     alara_inp = os.path.join(activation_responses_run_dir, "alara_inp")
+    print("161")
     alara_matlib = os.path.join(activation_responses_run_dir, "alara_matlib")
+    print("162")
     alara_fluxin = os.path.join(activation_responses_run_dir, "alara_fluxin")
+    print("163")
     blank_mesh = os.path.join(activation_responses_run_dir, "blank_mesh.h5m")
-    step1_file = os.path.join(activation_responses_run_dir, "activation_responses_step1.h5m")
+    print("164")
+    step1_file = os.path.join(
+        activation_responses_run_dir, "activation_responses_step1.h5m")
+    print("16")
 
     exp_alara_inp = os.path.join(activation_responses_run_dir, "exp_alara_inp")
-    exp_alara_matlib = os.path.join(activation_responses_run_dir, "exp_alara_matlib")
-    exp_alara_fluxin = os.path.join(activation_responses_run_dir, "exp_alara_fluxin")
+    exp_alara_matlib = os.path.join(
+        activation_responses_run_dir, "exp_alara_matlib")
+    exp_alara_fluxin = os.path.join(
+        activation_responses_run_dir, "exp_alara_fluxin")
+    print("17")
 
     # compare the output file of step1
     f1 = filecmp.cmp(alara_inp, exp_alara_inp)
+    print("181")
     f2 = file_block_almost_same(alara_matlib, exp_alara_matlib)
+    print("182")
     f3 = filecmp.cmp(alara_fluxin, exp_alara_fluxin)
+    print("18")
 
     # remove test output files
     os.remove(alara_inp)
@@ -219,13 +245,16 @@ def _activation_responses_test_step2(activation_responses_run_dir):
     os.chdir("..")
     folderpath = os.getcwd()
     dst = os.path.join(activation_responses_run_dir, "activation_responses.py")
-    copyfile(os.path.join(folderpath, "scripts", "activation_responses.py"), dst)
+    copyfile(os.path.join(folderpath, "scripts",
+                          "activation_responses.py"), dst)
 
     # output files of activation_responses step1
     alara_inp = os.path.join(activation_responses_run_dir, "alara_inp")
-    copyfile(os.path.join(activation_responses_run_dir, "exp_alara_inp"), alara_inp)
+    copyfile(os.path.join(activation_responses_run_dir,
+                          "exp_alara_inp"), alara_inp)
     blank_mesh = os.path.join(activation_responses_run_dir, "blank_mesh.h5m")
-    copyfile(os.path.join(activation_responses_run_dir, "exp_blank_mesh.h5m"), blank_mesh)
+    copyfile(os.path.join(activation_responses_run_dir,
+                          "exp_blank_mesh.h5m"), blank_mesh)
 
     # run activation_responses step2
     os.chdir(activation_responses_run_dir)
@@ -233,16 +262,20 @@ def _activation_responses_test_step2(activation_responses_run_dir):
 
     # output files of activation_responses step2
     h5_filename = os.path.join(activation_responses_run_dir, "decay_heat.h5")
-    exp_h5_filename = os.path.join(activation_responses_run_dir, "exp_decay_heat.h5")
-    h5m_filename = os.path.join(activation_responses_run_dir, "decay_heat_1.h5m")
-    exp_h5m_filename = os.path.join(activation_responses_run_dir, "exp_decay_heat_1.h5m")
+    exp_h5_filename = os.path.join(
+        activation_responses_run_dir, "exp_decay_heat.h5")
+    h5m_filename = os.path.join(
+        activation_responses_run_dir, "decay_heat_1.h5m")
+    exp_h5m_filename = os.path.join(
+        activation_responses_run_dir, "exp_decay_heat_1.h5m")
 
     # compare the results
     # compare two h5 files
     command = ''.join(['h5diff ', h5_filename, ' ', exp_h5_filename])
     diff_flag4 = os.system(command)
     # compare two h5m files
-    command = ''.join(['h5diff ', h5m_filename, ' ', exp_h5m_filename, ' /tstt/tags /tstt/tags'])
+    command = ''.join(['h5diff ', h5m_filename, ' ',
+                       exp_h5m_filename, ' /tstt/tags /tstt/tags'])
     diff_flag5 = os.system(command)
 
     # remove test generated files
@@ -266,6 +299,8 @@ def test_activation_responses_script():
 
     activation_responses_run_dir = os.path.join(
         thisdir, "files_test_activation_responses", "activation_responses_examples")
+    print("!!!!!!!!!!!before 1")
     _activation_responses_test_step1(activation_responses_run_dir)
-    _activation_responses_test_step2(activation_responses_run_dir)
+    print("!!!!!!!!!before 2")
 
+    _activation_responses_test_step2(activation_responses_run_dir)

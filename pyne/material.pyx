@@ -75,19 +75,19 @@ cdef class _Material:
         elif isinstance(nucvec, dict):
             # Material from dict
             comp = dict_to_comp(nucvec)
-            self.mat_pointer = new cpp_material.Material(
-                    comp, mass, density, atoms_per_molecule, deref(cmetadata._inst))
+            self.mat_pointer = shared_ptr[cpp_material.Material](cpp_material.Material(
+                    comp, mass, density, atoms_per_molecule, deref(cmetadata._inst)))
         elif isinstance(nucvec, basestring):
             # Material from file
             nucvec = nucvec.encode()
-            self.mat_pointer = new cpp_material.Material(
+            self.mat_pointer = shared_ptr[cpp_material.Material](cpp_material.Material(
                     <char *> nucvec, mass, density, atoms_per_molecule,
-                    deref(cmetadata._inst))
+                    deref(cmetadata._inst)))
         elif (nucvec is None):
             if free_mat:
                 # Make empty mass stream
-                self.mat_pointer = new cpp_material.Material(comp, mass, density,
-                                        atoms_per_molecule, deref(cmetadata._inst))
+                self.mat_pointer = shared_ptr[cpp_material.Material](cpp_material.Material(comp, mass, density,
+                                        atoms_per_molecule, deref(cmetadata._inst)))
             else:
                 self.mat_pointer = NULL
         else:
@@ -114,7 +114,7 @@ cdef class _Material:
             cdef conv._MapIntDouble comp_proxy
             if self._comp is None:
                 comp_proxy = conv.MapIntDouble(False, False)
-                comp_proxy.map_ptr = &self.mat_pointer.comp
+                comp_proxy.map_ptr = &deref(self.mat_pointer).comp
                 self._comp = comp_proxy
             return self._comp
 
@@ -123,20 +123,20 @@ cdef class _Material:
             cdef cpp_map[int, double]  m
 
             if isinstance(value, conv._MapIntDouble):
-                self.mat_pointer.comp = deref(
+                deref(self.mat_pointer).comp = deref(
                         (<conv._MapIntDouble> value).map_ptr)
             elif hasattr(value, 'items'):
                 m = cpp_map[int, double]()
                 for k, v in value.items():
                     item = cpp_pair[int, double](k, v)
                     m.insert(item)
-                self.mat_pointer.comp = m
+                deref(self.mat_pointer).comp = m
             elif hasattr(value, '__len__'):
                 m = cpp_map[int, double]()
                 for i in value:
                     item = cpp_pair[int, double](i[0], i[1])
                     m.insert(item)
-                self.mat_pointer.comp = m
+                deref(self.mat_pointer).comp = m
             else:
                 raise TypeError('{0} cannot be converted to a map.'.format(
                         type(value)))
@@ -145,35 +145,35 @@ cdef class _Material:
 
     property mass:
         def __get__(self):
-            return self.mat_pointer.mass
+            return deref(self.mat_pointer).mass
 
         def __set__(self, double value):
-            self.mat_pointer.mass = value
+            deref(self.mat_pointer).mass = value
 
     property density:
         def __get__(self):
-            return self.mat_pointer.density
+            return deref(self.mat_pointer).density
 
         def __set__(self, double value):
-            self.mat_pointer.density = value
+            deref(self.mat_pointer).density = value
 
     property atoms_per_molecule:
         def __get__(self):
-            return self.mat_pointer.atoms_per_molecule
+            return deref(self.mat_pointer).atoms_per_molecule
 
         def __set__(self, double value):
-            self.mat_pointer.atoms_per_molecule = value
+            deref(self.mat_pointer).atoms_per_molecule = value
 
     property metadata:
         def __get__(self):
             cdef jsoncpp.Value val = jsoncpp.Value(view=True)
-            val._inst = &self.mat_pointer.metadata
+            val._inst = &deref(self.mat_pointer).metadata
             return val
 
         def __set__(self, value):
             cdef jsoncpp.Value val = jsoncpp.Value(value)
             val._view = True
-            self.mat_pointer.metadata = deref(val._inst)
+            deref(self.mat_pointer).metadata = deref(val._inst)
 
     #
     # Class Methods
@@ -184,7 +184,7 @@ cdef class _Material:
         vector as mass.
 
         """
-        self.mat_pointer.norm_comp()
+        deref(self.mat_pointer).norm_comp()
 
 
     def from_hdf5(self, filename, datapath, int row=-1,
@@ -274,7 +274,7 @@ cdef class _Material:
         else:
             datapath_bytes = datapath
         c_datapath = datapath_bytes
-        self.mat_pointer.from_hdf5(c_filename, c_datapath, row, protocol)
+        deref(self.mat_pointer).from_hdf5(c_filename, c_datapath, row, protocol)
 
 
     def write_hdf5(self, filename, datapath="/mat_name", nucpath="",
@@ -335,9 +335,9 @@ cdef class _Material:
         if nucpath != "":
             nucpath_bytes = nucpath.encode('UTF-8')
             c_nucpath = nucpath_bytes
-            self.mat_pointer.deprecated_write_hdf5(c_filename, c_datapath, c_nucpath, row, chunksize)
+            deref(self.mat_pointer).deprecated_write_hdf5(c_filename, c_datapath, c_nucpath, row, chunksize)
         else:
-            self.mat_pointer.write_hdf5(c_filename, c_datapath, row, chunksize)
+            deref(self.mat_pointer).write_hdf5(c_filename, c_datapath, row, chunksize)
 
 
     def phits(self, frac_type='mass', mult_den=True):
@@ -353,7 +353,7 @@ cdef class _Material:
             or mass fraction if False. (default True)
         """
         cdef std_string card
-        card = self.mat_pointer.phits(frac_type.encode(), mult_den)
+        card = deref(self.mat_pointer).phits(frac_type.encode(), mult_den)
         return card.decode()
 
     def mcnp(self, frac_type='mass', mult_den=True):
@@ -369,7 +369,7 @@ cdef class _Material:
             or mass fraction if False. (default True)
         """
         cdef std_string card
-        card = self.mat_pointer.mcnp(frac_type.encode(), mult_den)
+        card = deref(self.mat_pointer).mcnp(frac_type.encode(), mult_den)
         return card.decode()
 
     def get_uwuw_name(self):
@@ -377,7 +377,7 @@ cdef class _Material:
         Return a uwuw material name
         """
         cdef std_string uwuw_name
-        uwuw_name = self.mat_pointer.get_uwuw_name()
+        uwuw_name = deref(self.mat_pointer).get_uwuw_name()
         return uwuw_name.decode()
 
     def openmc(self, frac_type='mass'):
@@ -385,7 +385,7 @@ cdef class _Material:
         Return an openmc xml element for the material
         """
         cdef std_string mat
-        mat = self.mat_pointer.openmc(frac_type.encode())
+        mat = deref(self.mat_pointer).openmc(frac_type.encode())
         return mat.decode()
 
     def fluka(self, fid, frac_type='mass'):
@@ -398,7 +398,7 @@ cdef class _Material:
         The sequential material id starting from 26 unless predefined
         """
         cdef std_string card
-        card = self.mat_pointer.fluka(fid, frac_type.encode())
+        card = deref(self.mat_pointer).fluka(fid, frac_type.encode())
         return card.decode()
 
     def not_fluka_builtin(self, fluka_name):
@@ -409,7 +409,7 @@ cdef class _Material:
         A string representing a FLUKA material name
         """
         cdef cpp_bool card
-        card = self.mat_pointer.not_fluka_builtin(fluka_name)
+        card = deref(self.mat_pointer).not_fluka_builtin(fluka_name)
         return card
 
     def fluka_material_str(self, id):
@@ -421,7 +421,7 @@ cdef class _Material:
         The sequential material id starting from 26 unless predefined
         """
         cdef std_string card
-        card = self.mat_pointer.fluka_material_str(id)
+        card = deref(self.mat_pointer).fluka_material_str(id)
         return card
 
     def fluka_material_component(self, id, nucid, fluka_name):
@@ -432,7 +432,7 @@ cdef class _Material:
         The sequential material id, the (single) nucid, and the fluka name
         """
         cdef std_string card
-        card = self.mat_pointer.fluka_material_component(id, nucid, fluka_name)
+        card = deref(self.mat_pointer).fluka_material_component(id, nucid, fluka_name)
         return card
 
     def fluka_material_line(self, znum, mass, id, name):
@@ -444,7 +444,7 @@ cdef class _Material:
         The znum, atomic mass, material id, and the fluka name
         """
         cdef std_string card
-        card = self.mat_pointer.fluka_material_line(znum, mass, id, name)
+        card = deref(self.mat_pointer).fluka_material_line(znum, mass, id, name)
         return card
 
     def fluka_format_field(self, field):
@@ -455,7 +455,7 @@ cdef class _Material:
         The field value
         """
         cdef std_string card
-        card = self.mat_pointer.fluka_format_field(field)
+        card = deref(self.mat_pointer).fluka_format_field(field)
         return card
 
     def fluka_compound_str(self, id, frac_type='mass'):
@@ -467,7 +467,7 @@ cdef class _Material:
         The sequential compound id starting from 26 unless predefined
         """
         cdef std_string card
-        card = self.mat_pointer.fluka_compound_str(id, frac_type)
+        card = deref(self.mat_pointer).fluka_compound_str(id, frac_type)
         return card
 
     def from_text(self, filename):
@@ -517,7 +517,7 @@ cdef class _Material:
         else:
             filename_bytes = filename
         c_filename = filename_bytes
-        self.mat_pointer.from_text(c_filename)
+        deref(self.mat_pointer).from_text(c_filename)
 
 
     def write_text(self, filename):
@@ -544,7 +544,7 @@ cdef class _Material:
         else:
             filename_bytes = filename
         c_filename = filename_bytes
-        self.mat_pointer.write_text(c_filename)
+        deref(self.mat_pointer).write_text(c_filename)
 
     def load_json(self, json):
         """load_json(json)
@@ -556,7 +556,7 @@ cdef class _Material:
             An object-type JSON value.
 
         """
-        self.mat_pointer.load_json(deref((<jsoncpp.Value> json)._inst))
+        deref(self.mat_pointer).load_json(deref((<jsoncpp.Value> json)._inst))
 
     def dump_json(self):
         """dump_json()
@@ -569,7 +569,7 @@ cdef class _Material:
 
         """
         cdef jsoncpp.Value val = jsoncpp.Value(view=False)
-        val._inst[0] = self.mat_pointer.dump_json()
+        val._inst[0] = deref(self.mat_pointer).dump_json()
         return val
 
     def from_json(self, filename):
@@ -585,7 +585,7 @@ cdef class _Material:
         cdef char * c_filename
         filename_bytes = filename.encode('UTF-8')
         c_filename = filename_bytes
-        self.mat_pointer.from_json(c_filename)
+        deref(self.mat_pointer).from_json(c_filename)
 
     def write_json(self, filename):
         """write_json(filename)
@@ -606,14 +606,14 @@ cdef class _Material:
 
         """
         filename = filename.encode()
-        self.mat_pointer.write_json(filename)
+        deref(self.mat_pointer).write_json(filename)
 
     def normalize(self):
         """This convenience method normalizes the mass stream by setting its
         mass = 1.0.
 
         """
-        self.mat_pointer.normalize()
+        deref(self.mat_pointer).normalize()
 
 
     def mult_by_mass(self):
@@ -630,7 +630,7 @@ cdef class _Material:
         """
         cdef conv._MapIntDouble nucvec_proxy = conv.MapIntDouble()
         nucvec_proxy.map_ptr = new cpp_map[int, double](
-                self.mat_pointer.mult_by_mass())
+                deref(self.mat_pointer).mult_by_mass())
         return nucvec_proxy
 
 
@@ -645,7 +645,7 @@ cdef class _Material:
         """
         cdef conv._MapIntDouble nucvec_proxy = conv.MapIntDouble()
         nucvec_proxy.map_ptr = new cpp_map[int, double](
-                self.mat_pointer.activity())
+                deref(self.mat_pointer).activity())
         return nucvec_proxy
 
 
@@ -661,7 +661,7 @@ cdef class _Material:
         """
         cdef conv._MapIntDouble nucvec_proxy = conv.MapIntDouble()
         nucvec_proxy.map_ptr = new cpp_map[int, double](
-                self.mat_pointer.decay_heat())
+                deref(self.mat_pointer).decay_heat())
         return nucvec_proxy
 
 
@@ -691,7 +691,7 @@ cdef class _Material:
             dose_type = dose_type.encode()
         dosetype = std_string(<char *> dose_type)
         nucvec_proxy.map_ptr = new cpp_map[int, double](
-                self.mat_pointer.dose_per_g(dosetype, source))
+                deref(self.mat_pointer).dose_per_g(dosetype, source))
         return nucvec_proxy
 
 
@@ -712,7 +712,7 @@ cdef class _Material:
             Molecular mass in [amu].
 
         """
-        return self.mat_pointer.molecular_mass(atoms_per_molecule)
+        return deref(self.mat_pointer).molecular_mass(atoms_per_molecule)
 
     def expand_elements(self, nucset=set()):
         """expand_elements(self)
@@ -734,7 +734,7 @@ cdef class _Material:
 
         """
         cdef _Material newmat = Material()
-        newmat.mat_pointer[0] = self.mat_pointer.expand_elements(nucset)
+        deref(newmat.mat_pointer)[0] = deref(self.mat_pointer).expand_elements(nucset)
         return newmat
 
     def collapse_elements(self, nucset):
@@ -755,7 +755,7 @@ cdef class _Material:
 
         """
         cdef _Material newmat = Material()
-        newmat.mat_pointer[0] = self.mat_pointer.collapse_elements(nucset)
+        deref(newmat.mat_pointer)[0] = deref(self.mat_pointer).collapse_elements(nucset)
         return newmat
 
     def mass_density(self, double num_dens=-1.0, double atoms_per_molecule=-1.0):
@@ -779,7 +779,7 @@ cdef class _Material:
             The density attr [g/cc].
 
         """
-        return self.mat_pointer.mass_density(num_dens, atoms_per_molecule)
+        return deref(self.mat_pointer).mass_density(num_dens, atoms_per_molecule)
 
     def number_density(self, double mass_dens=-1.0, double atoms_per_molecule=-1.0):
         """number_density(self, mass_dens=-1.0, atoms_per_molecule=-1.0)
@@ -802,7 +802,7 @@ cdef class _Material:
             The number density [1/cc] of the material.
 
         """
-        return self.mat_pointer.number_density(mass_dens, atoms_per_molecule)
+        return deref(self.mat_pointer).number_density(mass_dens, atoms_per_molecule)
 
 
 
@@ -842,7 +842,7 @@ cdef class _Material:
 
         # Make new python version of this material
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.sub_mat(nuc_set)
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).sub_mat(nuc_set)
         return pymat
 
 
@@ -874,7 +874,7 @@ cdef class _Material:
 
         # Make new python version of this material
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.set_mat(nuc_set, <double> value)
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).set_mat(nuc_set, <double> value)
         return pymat
 
 
@@ -907,7 +907,7 @@ cdef class _Material:
 
         # Make new python version of this material
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.del_mat(nuc_set)
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).del_mat(nuc_set)
         return pymat
 
 
@@ -942,7 +942,7 @@ cdef class _Material:
             cupper = nucname.id(upper)
 
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.sub_range(clower, cupper)
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).sub_range(clower, cupper)
         return pymat
 
 
@@ -979,7 +979,7 @@ cdef class _Material:
             cupper = nucname.id(upper)
 
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.set_range(clower, cupper, <double> value)
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).set_range(clower, cupper, <double> value)
         return pymat
 
 
@@ -1015,7 +1015,7 @@ cdef class _Material:
             cupper = nucname.id(upper)
 
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.del_range(clower, cupper)
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).del_range(clower, cupper)
         return pymat
 
 
@@ -1031,7 +1031,7 @@ cdef class _Material:
 
         """
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.sub_elem(nucname.id(element))
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).sub_elem(nucname.id(element))
         return pymat
 
 
@@ -1046,7 +1046,7 @@ cdef class _Material:
 
         """
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.sub_elem(nucname.id('U'))
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).sub_elem(nucname.id('U'))
         return pymat
 
 
@@ -1061,7 +1061,7 @@ cdef class _Material:
 
         """
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.sub_elem(nucname.id('Pu'))
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).sub_elem(nucname.id('Pu'))
         return pymat
 
 
@@ -1076,7 +1076,7 @@ cdef class _Material:
 
         """
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.sub_lan()
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).sub_lan()
         return pymat
 
 
@@ -1091,7 +1091,7 @@ cdef class _Material:
 
         """
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.sub_act()
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).sub_act()
         return pymat
 
 
@@ -1107,7 +1107,7 @@ cdef class _Material:
 
         """
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.sub_tru()
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).sub_tru()
         return pymat
 
 
@@ -1123,7 +1123,7 @@ cdef class _Material:
 
         """
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.sub_ma()
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).sub_ma()
         return pymat
 
 
@@ -1139,7 +1139,7 @@ cdef class _Material:
 
         """
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.sub_fp()
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).sub_fp()
         return pymat
 
 
@@ -1228,7 +1228,7 @@ cdef class _Material:
                 raise TypeError("Atom fraction keys must be integers, "
                         "strings, or Materials.")
 
-        self.mat_pointer.from_atom_frac(af)
+        deref(self.mat_pointer).from_atom_frac(af)
 
 
     def to_atom_dens(self):
@@ -1242,7 +1242,7 @@ cdef class _Material:
 
         """
         cdef conv._MapIntDouble comp_proxy = conv.MapIntDouble()
-        comp_proxy.map_ptr = new cpp_map[int, double](self.mat_pointer.to_atom_dens())
+        comp_proxy.map_ptr = new cpp_map[int, double](deref(self.mat_pointer).to_atom_dens())
         return comp_proxy
 
 
@@ -1259,7 +1259,7 @@ cdef class _Material:
         gammas : a vector of pairs of gamma-rays and intensities. The
             intensities are in decays/s/atom material
         """
-        return self.mat_pointer.gammas()
+        return deref(self.mat_pointer).gammas()
 
     def xrays(self, norm=False):
         """
@@ -1271,7 +1271,7 @@ cdef class _Material:
         x-rays : a vector of pairs of X-rays and intensities. The
             intensities are in decays/s/atom material
         """
-        return self.mat_pointer.xrays()
+        return deref(self.mat_pointer).xrays()
 
     def photons(self, norm=False):
         """
@@ -1291,14 +1291,14 @@ cdef class _Material:
         photons : a vector of pairs of photon energies and intensities. The
             intensities are in decays/s/atom material
         """
-        return self.mat_pointer.photons(<cpp_bool> norm)
+        return deref(self.mat_pointer).photons(<cpp_bool> norm)
 
     def decay(self, double t):
         """decay(double t)
         Decays a material for a time t, in seconds. Returns a new material.
         """
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.decay(t)
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).decay(t)
         return pymat
 
     def cram(self, A, int order=14):
@@ -1323,7 +1323,7 @@ cdef class _Material:
         cpp_A.assign(Aptr, Aptr + Alen)
         # transmute and return
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer.cram(cpp_A, order)
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer).cram(cpp_A, order)
         return pymat
 
 
@@ -1335,13 +1335,13 @@ cdef class _Material:
 
     def __add_float__(x, double y):
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = x.mat_pointer[0] + y
+        deref(pymat.mat_pointer)[0] = deref(x.mat_pointer)[0] + y
         return pymat
 
 
     def __add_material__(x, y):
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = (<_Material> x).mat_pointer[0] + (<_Material> y).mat_pointer[0]
+        deref(pymat.mat_pointer)[0] = deref((<_Material> x).mat_pointer)[0] + deref((<_Material> y).mat_pointer)[0]
         return pymat
 
 
@@ -1364,7 +1364,7 @@ cdef class _Material:
 
     def __mul_float__(x, double y):
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = x.mat_pointer[0] * y
+        deref(pymat.mat_pointer)[0] = deref(x.mat_pointer)[0] * y
         return pymat
 
 
@@ -1384,7 +1384,7 @@ cdef class _Material:
     # Division
     def __div_float__(self, double y):
         cdef _Material pymat = Material()
-        pymat.mat_pointer[0] = self.mat_pointer[0] * (1 / y)
+        deref(pymat.mat_pointer)[0] = deref(self.mat_pointer)[0] * (1 / y)
         return pymat
 
     def __div__(self, y):
@@ -1425,8 +1425,8 @@ cdef class _Material:
 
         # Get single integer-key
         if isinstance(key, int):
-            if 0 < self.mat_pointer.comp.count(key):
-                key_mass = self.mat_pointer.comp[key] * self.mat_pointer.mass
+            if 0 < deref(self.mat_pointer).comp.count(key):
+                key_mass = deref(self.mat_pointer).comp[key] * deref(self.mat_pointer).mass
                 return key_mass
             else:
                 raise KeyError("key {0} not found".format(repr(key)))
@@ -1470,7 +1470,7 @@ cdef class _Material:
             mbm = self.mult_by_mass()
             mbm.map_ptr[0][key] = value
             new_matp = new cpp_material.Material(mbm.map_ptr[0], -1.0, -1.0)
-            self.mat_pointer = new_matp
+            deref(self.mat_pointer) = new_matp
             self._comp = None
 
         # Set single string-key
@@ -1490,13 +1490,13 @@ cdef class _Material:
 
             # set values back on instance
             new_mat = self.set_range(lower, upper, value)
-            self.mat_pointer[0] = new_mat.mat_pointer[0]
+            deref(self.mat_pointer)[0] = deref(new_mat.mat_pointer)[0]
             self._comp = None
 
         # Set sequance-based sub-material
         elif hasattr(key, '__len__'):
             new_mat = self.set_mat(key, value)
-            self.mat_pointer[0] = new_mat.mat_pointer[0]
+            deref(self.mat_pointer)[0] = deref(new_mat.mat_pointer)[0]
             self._comp = None
 
         # Fail-Yurt
@@ -1514,13 +1514,13 @@ cdef class _Material:
 
         # Remove single key
         if isinstance(key, int):
-            if 0 == self.mat_pointer.comp.count(key):
+            if 0 == deref(self.mat_pointer).comp.count(key):
                 return
             mbm = self.mult_by_mass()
             mbm.map_ptr.erase(<int> key)
             new_matp = new cpp_material.Material(mbm.map_ptr[0], -1.0)
             new_matp = new cpp_material.Material(mbm.map_ptr[0], -1.0, -1.0)
-            self.mat_pointer = new_matp
+            deref(self.mat_pointer) = new_matp
             self._comp = None
 
         # Remove single string-key
@@ -1540,13 +1540,13 @@ cdef class _Material:
 
             # set values back on instance
             new_mat = self.del_range(lower, upper)
-            self.mat_pointer[0] = new_mat.mat_pointer[0]
+            deref(self.mat_pointer)[0] = deref(new_mat.mat_pointer)[0]
             self._comp = None
 
         # Remove sequance-based sub-material
         elif hasattr(key, '__len__'):
             new_mat = self.del_mat(key)
-            self.mat_pointer[0] = new_mat.mat_pointer[0]
+            deref(self.mat_pointer)[0] = deref(new_mat.mat_pointer)[0]
             self._comp = None
 
         # Fail-Yurt
@@ -1627,14 +1627,14 @@ class Material(_Material, collections.MutableMapping):
 
     def __deepcopy__(self, memo):
         cdef _Material other = Material(free_mat=False)
-        cdef cpp_material.Material * self_ptr = (<_Material> self).mat_pointer
+        cdef cpp_material.Material * self_ptr = deref((<_Material> self).mat_pointer)
         cdef cpp_material.Material * other_ptr = new cpp_material.Material()
         other_ptr.comp = self_ptr.comp
         other_ptr.mass = self_ptr.mass
         other_ptr.density = self_ptr.density
         other_ptr.atoms_per_molecule = self_ptr.atoms_per_molecule
         other_ptr.metadata = self_ptr.metadata
-        other.mat_pointer = other_ptr
+        deref(other.mat_pointer) = other_ptr
         other._free_mat = True
         return other
 
@@ -1915,162 +1915,6 @@ def from_text(filename, double mass=-1.0, double atoms_per_molecule=-1.0, metada
 ###########################
 ### Material Converters ###
 ###########################
-
-
-
-
-# (Str, Material)
-cdef class MapIterStrMaterial(object):
-    cdef void init(self, cpp_map[std_string, matp] * map_ptr):
-        cdef cpp_map[std_string, matp].iterator * itn = <cpp_map[std_string,
-                matp].iterator *> malloc(sizeof(map_ptr.begin()))
-        itn[0] = map_ptr.begin()
-        self.iter_now = itn
-
-        cdef cpp_map[std_string, matp].iterator * ite = <cpp_map[std_string,
-                matp].iterator *> malloc(sizeof(map_ptr.end()))
-        ite[0] = map_ptr.end()
-        self.iter_end = ite
-
-    def __dealloc__(self):
-        free(self.iter_now)
-        free(self.iter_end)
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        cdef cpp_map[std_string, matp].iterator inow = deref(self.iter_now)
-        cdef cpp_map[std_string, matp].iterator iend = deref(self.iter_end)
-
-        if inow != iend:
-            pyval = str(<char *> deref(inow).first.c_str())
-        else:
-            raise StopIteration
-
-        inc(deref(self.iter_now))
-        return pyval
-
-
-cdef class _MapStrMaterial:
-    def __cinit__(self, new_map=True, bint free_map=True):
-        cdef std_string s
-        cdef cpp_pair[std_string, matp] item
-
-        # Cache needed to prevent Python from deref'ing
-        # pointers before their time.
-        self._cache = {}
-
-        # Decide how to init map, if at all
-        if isinstance(new_map, _MapStrMaterial):
-            self.map_ptr = (<_MapStrMaterial> new_map).map_ptr
-            self._cache = (<_MapStrMaterial> new_map)._cache
-        elif hasattr(new_map, 'items'):
-            self.map_ptr = new cpp_map[std_string, matp]()
-            for key, value in new_map.items():
-                #s = std_string(key)
-                #item = cpp_pair[std_string, matp](s, (<_Material>
-                # value).mat_pointer)
-                #self.map_ptr.insert(item)
-                self[key] = value
-        elif hasattr(new_map, '__len__'):
-            self.map_ptr = new cpp_map[std_string, matp]()
-            for i in new_map:
-                #s = std_string(i[0])
-                #item = cpp_pair[std_string, matp](s, (<_Material>
-                # i[1]).mat_pointer)
-                #self.map_ptr.insert(item)
-                self[i[0]] = i[1]
-        elif bool(new_map):
-            self.map_ptr = new cpp_map[std_string, matp]()
-
-        # Store free_map
-        self._free_map = free_map
-
-    def __dealloc__(self):
-        if self._free_map:
-            del self.map_ptr
-
-    def __contains__(self, key):
-        cdef std_string s
-        if isinstance(key, str):
-            s = std_string(<char *> key)
-        else:
-            return False
-
-        if 0 < self.map_ptr.count(s):
-            return True
-        else:
-            return False
-
-    def __len__(self):
-        return self.map_ptr.size()
-
-    def __iter__(self):
-        cdef MapIterStrMaterial mi = MapIterStrMaterial()
-        mi.init(self.map_ptr)
-        return mi
-
-    def __getitem__(self, key):
-        cdef std_string s
-        cdef _Material pymat
-
-        if isinstance(key, basestring):
-            key = key.encode()
-            s = std_string(<char *> key)
-        else:
-            raise TypeError("Only string keys are valid.")
-
-        if 0 < self.map_ptr.count(s):
-            if key not in self._cache:
-                pymat = Material(nucvec=None, free_mat=False)
-                pymat.mat_pointer = deref(self.map_ptr)[s]
-                self._cache[key] = pymat
-            return self._cache[key]
-        else:
-            raise KeyError(repr(key) + " not in map.")
-
-    def __setitem__(self, key, value):
-
-        cdef char * c_key
-        key_bytes = key.encode('UTF-8')
-        c_key = key_bytes
-        cdef std_string s = std_string(c_key)
-        if not isinstance(value, _Material):
-            raise TypeError("may only set materials into this mapping.")
-        cdef cpp_pair[std_string, matp] item = cpp_pair[std_string, matp](s,
-                (<_Material> value).mat_pointer)
-        self.map_ptr.insert(item)
-        self._cache[c_key] = value
-
-    def __delitem__(self, char * key):
-        cdef std_string s
-        if key in self:
-            s = std_string(key)
-            self.map_ptr.erase(s)
-            del self._cache[key]
-
-
-class MapStrMaterial(_MapStrMaterial, collections.MutableMapping):
-    """Wrapper class for C++ standard library maps of type <string, Material
-    \*>.  Provides dictionary like interface on the Python level.
-
-    Parameters
-    ----------
-    new_map : bool or dict-like
-        Boolean on whether to make a new map or not, or dict-like object
-        with keys and values which are castable to the appropriate type.
-    free_map : bool
-        Flag for whether the pointer to the C++ map should be deallocated
-        when the wrapper is dereferenced.
-
-    """
-    def __str__(self):
-        return self.__repr__()
-
-    def __repr__(self):
-        return "{" + ", ".join(["{0}: {1}".format(repr(key), value) for key, value in self.items()]) + "}"
-
 
 
 class MultiMaterial(collections.MutableMapping):

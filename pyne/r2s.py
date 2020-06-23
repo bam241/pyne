@@ -132,16 +132,21 @@ def irradiation_setup(flux_mesh, cell_mats, cell_fracs, alara_params,
     wdr_file : str
         Path to the wdr file.
     """
-
+    print("r2s 1")
     m = resolve_mesh(flux_mesh, tally_num, flux_tag, output_material)
+    print("r2s 12")
 
     if output_material:
         m.cell_fracs_to_mats(cell_fracs, cell_mats)
+    print("r2s 13")
 
     mesh_to_fluxin(m, flux_tag, fluxin, reverse,
                    sub_voxel, cell_fracs, cell_mats)
+    print("r2s 14")
+
     record_to_geom(m, cell_fracs, cell_mats, alara_inp, alara_matlib,
                    sub_voxel=sub_voxel)
+    print("r2s 15")
 
     # write decay times into alara_inp
     if decay_times is None:
@@ -152,17 +157,22 @@ def irradiation_setup(flux_mesh, cell_mats, cell_fracs, alara_params,
     decay_str = ''.join([decay_str, 'end\n'])
     with open(alara_inp, 'a') as f:
         f.write(decay_str)
+    print("r2s 16")
+    print("r2s 17")
 
     if isfile(alara_params):
         with open(alara_params, 'r') as f:
             alara_params = f.read()
+    print("r2s 18")
 
     with open(alara_inp, 'a') as f:
         f.write("\n" + alara_params)
+    print("r2s 19")
 
     # append responses output zone
     with open(alara_inp, 'a') as f:
         f.write(responses_output_zone(responses, wdr_file, alara_params))
+    print("r2s 120")
 
     m.write_hdf5(output_mesh)
 

@@ -98,6 +98,7 @@ class MaterialLibrary {
    */
   void merge(const pyne::MaterialLibrary& mat_lib);
   void merge(pyne::MaterialLibrary* mat_lib);
+  void merge(std::shared_ptr<pyne::MaterialLibrary> mat_lib);
 
   /**
    * \brief Add a material to the library
@@ -111,6 +112,16 @@ class MaterialLibrary {
    * \param mat material to add
   */
   void add_material(const std::string& mat_name, const pyne::Material& mat);
+
+  /**
+   * \brief Add a material to the library
+   * \param mat_name name of the material to add(will overwrite material name
+            if it already has one)
+   * \param mat shared_ptr<material> to add
+  */
+  void add_material(const std::string& mat_name,
+                    const std::shared_ptr<pyne::Material>& mat);
+
   /**
    * \brief remove a material of the Library by name
    * \param mat_name name of the material to remove

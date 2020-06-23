@@ -14,6 +14,7 @@ from cython.operator cimport dereference as deref
 from cython.operator cimport preincrement as inc
 from libc.stdlib cimport free
 from libcpp.string cimport string as std_string
+from libcpp.memory cimport shared_ptr
 
 from warnings import warn
 from pyne.utils import QAWarning
@@ -173,14 +174,14 @@ cdef class Cascade:
             cdef pyne.material._Material mat_feed_proxy
             if self._mat_feed is None:
                 mat_feed_proxy = pyne.material.Material(free_mat=False)
-                mat_feed_proxy.mat_pointer = &(<cpp_enrichment.Cascade *> self._inst).mat_feed
+                mat_feed_proxy.mat_pointer = <shared_ptr[pyne.cpp_material.Material]>((<cpp_enrichment.Cascade *> self._inst).mat_feed)
                 self._mat_feed = mat_feed_proxy
             return self._mat_feed
     
         def __set__(self, value):
             cdef pyne.material._Material value_proxy
             value_proxy = pyne.material.Material(value, free_mat=not isinstance(value, pyne.material._Material))
-            (<cpp_enrichment.Cascade *> self._inst).mat_feed = value_proxy.mat_pointer[0]
+            (<cpp_enrichment.Cascade *> self._inst).mat_feed = value_proxy.mat_pointer
             self._mat_feed = None
 
     property mat_prod:

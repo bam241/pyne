@@ -36,11 +36,11 @@ cdef extern from "material_library.h" namespace "pyne":
         void write_hdf5(std_string, std_string) except +
         
         void add_material(cpp_material.Material) except +
-        void add_material(std_string, cpp_material.Material) except +
+        void add_material(std_string, shared_ptr[cpp_material.Material]) except +
         
         void del_material(cpp_material.Material) except +
         void del_material(std_string) except +
-        void merge(MaterialLibrary*) except +
+        void merge(shared_ptr[MaterialLibrary]) except +
 
         cpp_material.Material get_material(std_string) except +
         shared_ptr[cpp_material.Material] get_material_ptr( std_string ) except +

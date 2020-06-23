@@ -18,7 +18,7 @@ cimport cpp_material_library
 ctypedef cpp_material.Material * matp
 
 cdef class _MaterialLibrary:
-    cdef cpp_material_library.MaterialLibrary * _inst
+    cdef shared_ptr[cpp_material_library.MaterialLibrary] _inst
     cdef cpp_set[std_string] get_keylist(self)
     cdef cpp_set[int] get_nuclist(self)
 
