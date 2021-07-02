@@ -73,9 +73,9 @@ class AmalgamatedFile(object):
             comment_out = ext not in CODE_EXTS
         self._blocks.append('//\n// start of {0}\n//\n'.format(filename))
         if sys.version > '3':
-            with io.open(filename, 'rt', encoding='utf-8') as f: content = f.read()
+            with open(filename, 'rt', encoding='utf-8') as f: content = f.read()
         else:
-            with io.open(filename, 'rt') as f: content = f.read()
+            with open(filename, 'rt') as f: content = f.read()
 
         if comment_out:
             content = '// ' + content.replace('\n', '\n// ')
